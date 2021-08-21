@@ -42,9 +42,7 @@ class Item:
 
     @property
     def is_folder(self) -> bool:
-        if self.type == 'folder':
-            return True
-        return False
+        return self.type == 'folder'
 
     @property
     def is_image(self) -> bool:
@@ -53,6 +51,14 @@ class Item:
         if self.type == 'jpg':
             return True
         return False
+
+    @property
+    def is_pdf(self) -> bool:
+        return self.type == 'pdf'
+
+    @property
+    def is_txt(self) -> bool:
+        return self.type == 'txt'
 
     @property
     def name(self) -> str:
@@ -234,6 +240,10 @@ class Document(Item):
         self.fill_ancestors(str(l_d['folderId']))
         if self.is_image:
             self.f_image = 'data:image/jpeg;base64,' + base64.b64encode(l_q.get_content()).decode()
+        elif self.is_pdf:
+            self.f_content = 'data:application/pdf;base64,' + base64.b64encode(l_q.get_content()).decode()
+        elif self.is_txt:
+            self.f_content = l_q.get_content().decode()
         return None
 
 

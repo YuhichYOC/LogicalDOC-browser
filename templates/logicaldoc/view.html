@@ -13,14 +13,7 @@
     <div class="row">
         {% include 'logicaldoc/part/breadcrumb.html' with i=document %}
     </div>
-    <div class="row">
-        <p class="h1">{{ document.name }}</p>
-    </div>
-{% if document.type == 'png' or document.type == 'jpg' %}
-    <div class="row d-flex flex-fill justify-content-center">
-        <img src="{{ document.image }}" alt="{{ document.name }}"/>
-    </div>
-{% endif %}
+    {% include 'logicaldoc/part/view_content.html' with i=document %}
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj"

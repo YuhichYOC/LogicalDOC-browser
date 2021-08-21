@@ -1,0 +1,15 @@
+{% if i.is_image %}
+<div class="row d-flex flex-fill justify-content-center">
+    <img src="{{ i.image }}" alt="{{ i.name }}">
+</div>
+{% elif i.is_pdf %}
+<div class="row d-flex flex-fill justify-content-center">
+    <object data="{{ i.content }}" type="application/pdf" height="700px"><p>{{ i.name }}</p></object>
+</div>
+{% elif i.is_txt %}
+<div class="row d-flex flex-fill justify-content-center">
+    <label for="{{ i.id }}">{{ i.name }}</label>
+    <textarea id="{{ i.id }}" rows="28">{{ i.content }}</textarea>
+</div>
+{% else %}
+{% endif %}
