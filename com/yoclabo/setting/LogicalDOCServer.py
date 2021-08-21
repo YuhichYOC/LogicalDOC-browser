@@ -26,7 +26,7 @@ def get_logicaldoc_server_port() -> str:
 
 
 def get_logicaldoc_server_tenant() -> str:
-    return ''
+    return 'logicaldoc'
 
 
 def get_logicaldoc_server_name() -> str:

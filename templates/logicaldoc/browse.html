@@ -1,60 +1,30 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Root</title>
-    <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.css' %}"/>
+    <title>Folder {{ folder.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We"
+          crossorigin="anonymous">
 </head>
 <body>
 <div class="container-fluid p-5">
-    <div class="row d-flex">
-        {% for a in folder.ancestors %}
-            <span class="align-middle h3"> >> </span>
-            <a class="flex-fill border text-center h3" href=?id={{ a.id }}&type={{ a.type }}>{{ a.name }}</a>
-        {% endfor %}
-    </div>
     <div class="row">
-        <p class="h1">{{ folder.name }}</p>
+        {% include 'logicaldoc/part/breadcrumb.html' with i=folder %}
     </div>
+{% for i in folder.display_items %}
+    {% include 'logicaldoc/part/folder_row.html' with i=i %}
+{% endfor %}
     <div class="row">
-        <table class="table table-striped">
-            {% for f in folder.sub_folders %}
-                <tr>
-                    <td class="align-middle">
-                        <a class="d-flex flex-fill" href=?id={{ f.id }}&type={{ f.type }}>{{ f.name }}</a>
-                    </td>
-                    <td>&nbsp;</td>
-                    <td>{{ f.type }}</td>
-                </tr>
-            {% endfor %}
-            {% for d in folder.sub_documents %}
-                <tr>
-                    <td class="align-middle">
-                        <a class="d-flex flex-fill" href=?id={{ d.id }}&type={{ d.type }}>{{ d.name }}</a>
-                    </td>
-                    {% if d.type == 'png' or d.type == 'jpg' %}
-                        <td class="align-middle"><img src="{{ d.thumb }}" alt="{{ d.name }}"/></td>
-                    {% else %}
-                        <td>&nbsp;</td>
-                    {% endif %}
-                    <td class="align-middle">{{ d.type }}</td>
-                </tr>
-            {% endfor %}
-        </table>
+        {% include 'logicaldoc/part/pagination.html' with i=folder %}
     </div>
 </div>
-<form class="container-fluid p-5 border-top" method="post" action="/logicaldoc/" enctype="multipart/form-data">
-    {% csrf_token %}
-    <div>
-        <label>フォルダ名 : <input type="text" name="folderName"></label>
-        <input type="submit" value="フォルダ作成">
-    </div>
-    <div>
-        <input type="file" name="file">
-        <input type="submit" value="ファイルアップロード">
-    </div>
-    <input type="hidden" name="id" value={{ folder.id }}>
-</form>
+<div class="border-top">
+    {% include 'logicaldoc/part/folder_new_item.html' with i=folder %}
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj"
+        crossorigin="anonymous"></script>
 </body>
 </html>

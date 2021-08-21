@@ -58,13 +58,17 @@ class LogicalDOCHandler:
     @staticmethod
     def query_root_folder() -> dict:
         l_f = Item.Folder()
+        l_f.type = 'folder'
         l_f.describe_root_folder()
+        l_f.go_to_page(1)
         return {'folder': l_f}
 
     def query_folder(self) -> dict:
         l_f = Item.Folder()
         l_f.id = self.id
+        l_f.type = 'folder'
         l_f.describe()
+        l_f.go_to_page(int(self.request.GET.get('page')))
         return {'folder': l_f}
 
     def query_document(self) -> dict:

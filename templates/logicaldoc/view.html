@@ -1,27 +1,29 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <title>Image View</title>
-    <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.css' %}"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We"
+          crossorigin="anonymous">
 </head>
 <body>
 <div class="container-fluid p-5">
-    <div class="row d-flex">
-        {% for a in document.ancestors %}
-            <span class="align-middle h3"> >> </span>
-            <a class="flex-fill border text-center h3" href=?id={{ a.id }}&type={{ a.type }}>{{ a.name }}</a>
-        {% endfor %}
+    <div class="row">
+        {% include 'logicaldoc/part/breadcrumb.html' with i=document %}
     </div>
     <div class="row">
         <p class="h1">{{ document.name }}</p>
     </div>
-    {% if document.type == 'png' or document.type == 'jpg' %}
-        <div class="row d-flex flex-fill justify-content-center">
-            <img src="{{ document.image }}" alt="{{ document.name }}"/>
-        </div>
-    {% endif %}
+{% if document.type == 'png' or document.type == 'jpg' %}
+    <div class="row d-flex flex-fill justify-content-center">
+        <img src="{{ document.image }}" alt="{{ document.name }}"/>
+    </div>
+{% endif %}
 </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj"
+        crossorigin="anonymous"></script>
 </body>
 </html>

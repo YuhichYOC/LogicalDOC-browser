@@ -28,7 +28,9 @@ class Item:
         self.f_id: str = ''
         self.f_type: str = ''
         self.f_name: str = ''
+        self.f_sequence: int = 0
         self.f_ancestors: list = []
+        self.f_pages: list = []
 
     @property
     def id(self) -> str:
@@ -39,12 +41,42 @@ class Item:
         return self.f_type
 
     @property
+    def is_folder(self) -> bool:
+        if self.type == 'folder':
+            return True
+        return False
+
+    @property
+    def is_image(self) -> bool:
+        if self.type == 'png':
+            return True
+        if self.type == 'jpg':
+            return True
+        return False
+
+    @property
     def name(self) -> str:
         return self.f_name
 
     @property
+    def sequence(self) -> int:
+        return self.f_sequence
+
+    @property
+    def is_even_row(self) -> bool:
+        return True if 0 == self.f_sequence % 2 else False
+
+    @property
     def ancestors(self) -> list:
         return self.f_ancestors
+
+    @property
+    def ancestors_count(self) -> int:
+        return len(self.f_ancestors)
+
+    @property
+    def pages(self) -> list:
+        return self.f_pages
 
     @id.setter
     def id(self, arg: str):
@@ -58,6 +90,10 @@ class Item:
     def name(self, arg: str):
         self.f_name = arg
 
+    @sequence.setter
+    def sequence(self, arg: int):
+        self.f_sequence = arg
+
     def fill_ancestors(self, folder_id: str) -> None:
         self.f_ancestors.clear()
         l_f = Query.FolderQuery()
@@ -68,6 +104,8 @@ class Item:
             add.type = 'folder'
             add.name = a['name']
             self.f_ancestors.append(add)
+        if self.is_folder:
+            del self.f_ancestors[-1]
         return None
 
 
@@ -75,16 +113,30 @@ class Folder(Item):
 
     def __init__(self):
         super().__init__()
-        self.f_sub_folders: list = []
-        self.f_sub_documents: list = []
+        self.f_items: list = []
+        self.f_items_total: int = 0
+        self.f_current_page: int = 0
+        self.f_display_items: list = []
+        self.ITEMS_PER_PAGE: int = 10
 
     @property
-    def sub_folders(self) -> list:
-        return self.f_sub_folders
+    def max_page(self) -> int:
+        if 0 == self.f_items_total:
+            return 1
+        # Round up "f_items_total" divided by "ITEMS_PER_PAGE" to get the maximum number of pages.
+        return -(-self.f_items_total // self.ITEMS_PER_PAGE)
 
     @property
-    def sub_documents(self) -> list:
-        return self.f_sub_documents
+    def prev_page(self) -> int:
+        return self.f_current_page - 1 if 1 < self.f_current_page else 1
+
+    @property
+    def next_page(self) -> int:
+        return self.f_current_page + 1 if self.max_page > self.f_current_page else self.max_page
+
+    @property
+    def display_items(self) -> list:
+        return self.f_display_items
 
     def describe_root_folder(self) -> None:
         l_q = Query.FolderQuery()
@@ -94,25 +146,50 @@ class Folder(Item):
         return None
 
     def describe(self) -> None:
+        self.f_items.clear()
         l_q = Query.FolderQuery()
         l_q.id = self.id
         self.name = l_q.get_folder()['name']
-        self.f_sub_folders.clear()
         for f in l_q.list_children():
             add = Folder()
             add.id = str(f['id'])
             add.type = 'folder'
             add.name = f['name']
-            self.f_sub_folders.append(add)
-        self.f_sub_documents.clear()
+            add.sequence = len(self.f_items) + 1
+            self.f_items.append(add)
         for d in l_q.list_document():
             add = Document()
             add.id = str(d['id'])
             add.type = d['type']
             add.name = d['fileName']
-            add.fetch_thumb()
-            self.f_sub_documents.append(add)
+            add.sequence = len(self.f_items) + 1
+            self.f_items.append(add)
+        self.f_items_total = len(self.f_items)
+        self.f_current_page = 1
+        for p in range(self.max_page):
+            self.f_pages.append(p + 1)
         self.fill_ancestors(self.id)
+        return None
+
+    def go_to_page(self, arg: int) -> None:
+        self.f_current_page = arg
+        if 1 > self.f_current_page:
+            self.f_current_page = 1
+        if self.max_page < self.f_current_page:
+            self.f_current_page = self.max_page
+        self.fetch_thumb()
+        return None
+
+    def fetch_thumb(self) -> None:
+        l_start = self.ITEMS_PER_PAGE * (self.f_current_page - 1)
+        l_end = l_start + self.ITEMS_PER_PAGE
+        if self.f_items_total < l_end:
+            l_end = self.f_items_total
+        self.f_display_items.clear()
+        for i in range(l_start, l_end):
+            if self.f_items[i].is_image:
+                self.f_items[i].fetch_thumb()
+            self.f_display_items.append(self.f_items[i])
         return None
 
 
@@ -137,16 +214,12 @@ class Document(Item):
         return self.f_image
 
     def fetch_thumb(self) -> None:
-        if self.type != 'png' and self.type != 'jpg':
-            return None
         l_q = Query.DocumentQuery()
         l_q.id = self.id
         self.f_thumb = 'data:image/jpeg;base64,' + base64.b64encode(l_q.get_thumb()).decode()
         return None
 
     def create_thumb(self) -> None:
-        if self.type != 'png' and self.type != 'jpg':
-            return None
         l_q = Query.DocumentQuery()
         l_q.id = self.id
         l_q.create_thumb()
@@ -159,7 +232,6 @@ class Document(Item):
         self.type = l_d['type']
         self.name = l_d['fileName']
         self.fill_ancestors(str(l_d['folderId']))
-        if self.type != 'png' and self.type != 'jpg':
-            return None
-        self.f_image = 'data:image/jpeg;base64,' + base64.b64encode(l_q.get_content()).decode()
+        if self.is_image:
+            self.f_image = 'data:image/jpeg;base64,' + base64.b64encode(l_q.get_content()).decode()
         return None

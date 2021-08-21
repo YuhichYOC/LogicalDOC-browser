@@ -101,6 +101,8 @@ class LogicalDOCRouter(Router):
             return False
         if not self.has_get_param('type'):
             return False
+        if not self.has_get_param('page'):
+            return False
         if self.get_get_param('type') != 'folder':
             return False
         return True

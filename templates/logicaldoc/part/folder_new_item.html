@@ -1,0 +1,23 @@
+<form method="post" action="/logicaldoc/" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row align-items-center g-3 m-3">
+        <div class="col-auto">
+            <label for="folderName" class="form-label">フォルダ名</label>
+        </div>
+        <div class="col-auto">
+            <input type="text" class="form-control" id="folderName" name="folderName">
+        </div>
+        <div class="col-auto">
+            <input type="submit" class="btn btn-primary" value="フォルダ作成">
+        </div>
+    </div>
+    <div class="row align-items-center g-3 m-3">
+        <div class="col-auto">
+            <input type="file" class="form-control" name="file">
+        </div>
+        <div class="col-auto">
+            <input type="submit" class="btn btn-primary" value="ファイルアップロード">
+        </div>
+    </div>
+    <input type="hidden" name="id" value={{ i.id }}>
+</form>

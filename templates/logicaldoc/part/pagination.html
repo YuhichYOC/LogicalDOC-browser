@@ -1,0 +1,15 @@
+<nav aria-label="folder pages">
+    <ul class="pagination">
+        <li class="page-item">
+            <a class="page-link" href=?id={{ i.id }}&type={{ i.type }}&page={{ i.prev_page }}>Previous</a>
+        </li>
+        {% for p in i.pages %}
+        <li class="page-item">
+            <a class="page-link" href=?id={{ i.id }}&type={{ i.type }}&page={{ p }}>{{ p }}</a>
+        </li>
+        {% endfor %}
+        <li class="page-item">
+            <a class="page-link" href=?id={{ i.id }}&type={{ i.type }}&page={{ i.next_page }}>Next</a>
+        </li>
+    </ul>
+</nav>
