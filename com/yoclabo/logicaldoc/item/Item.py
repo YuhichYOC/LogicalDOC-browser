@@ -166,8 +166,7 @@ class Folder(Item):
             self.f_items.append(add)
         self.f_items_total = len(self.f_items)
         self.f_current_page = 1
-        for p in range(self.max_page):
-            self.f_pages.append(p + 1)
+        self.f_pages = Page(0, '').create_list(self.f_current_page, self.prev_page, self.next_page, self.max_page)
         self.fill_ancestors(self.id)
         return None
 
@@ -177,6 +176,7 @@ class Folder(Item):
             self.f_current_page = 1
         if self.max_page < self.f_current_page:
             self.f_current_page = self.max_page
+        self.f_pages = Page(0, '').create_list(self.f_current_page, self.prev_page, self.next_page, self.max_page)
         self.fetch_thumb()
         return None
 
@@ -235,3 +235,91 @@ class Document(Item):
         if self.is_image:
             self.f_image = 'data:image/jpeg;base64,' + base64.b64encode(l_q.get_content()).decode()
         return None
+
+
+class Page:
+
+    def __init__(self, p: int, t: str):
+        self.f_page: int = p
+        self.f_text: str = t
+        self.f_is_current: bool = False
+        self.CAPTION_PREV_PAGE: str = 'Previous'
+        self.CAPTION_NEXT_PAGE: str = 'Next'
+        self.CAPTION_DOT: str = '...'
+
+    @property
+    def page(self) -> int:
+        return self.f_page
+
+    @property
+    def text(self) -> str:
+        return self.f_text
+
+    @property
+    def is_current(self) -> bool:
+        return self.f_is_current
+
+    @is_current.setter
+    def is_current(self, arg: bool):
+        self.f_is_current = arg
+
+    def create_list(self, current_page: int, prev_page: int, next_page: int, max_page: int) -> list:
+        l_pages: list = []
+        if 9 > max_page:
+            l_pages = self.create_first_2(l_pages, prev_page)
+            l_pages = self.create_center(l_pages, 2, max_page)
+            l_pages = self.create_last_2(l_pages, next_page, max_page)
+            l_pages = self.mark_current(l_pages, current_page)
+            return l_pages
+        if 1 + 4 > current_page:
+            l_pages = self.create_first_2(l_pages, prev_page)
+            l_pages = self.create_center(l_pages, 2, current_page + 3)
+            l_pages = self.create_next_dot(l_pages, current_page)
+            l_pages = self.create_last_2(l_pages, next_page, max_page)
+            l_pages = self.mark_current(l_pages, current_page)
+            return l_pages
+        if max_page - 4 < current_page:
+            l_pages = self.create_first_2(l_pages, prev_page)
+            l_pages = self.create_prev_dot(l_pages, current_page)
+            l_pages = self.create_center(l_pages, current_page - 2, max_page)
+            l_pages = self.create_last_2(l_pages, next_page, max_page)
+            l_pages = self.mark_current(l_pages, current_page)
+            return l_pages
+        l_pages = self.create_first_2(l_pages, prev_page)
+        l_pages = self.create_prev_dot(l_pages, current_page)
+        l_pages = self.create_center(l_pages, current_page - 2, current_page + 3)
+        l_pages = self.create_next_dot(l_pages, current_page)
+        l_pages = self.create_last_2(l_pages, next_page, max_page)
+        l_pages = self.mark_current(l_pages, current_page)
+        return l_pages
+
+    def create_first_2(self, l_pages: list, prev_page: int) -> list:
+        l_pages.append(Page(1, '1'))
+        l_pages.append(Page(prev_page, self.CAPTION_PREV_PAGE))
+        return l_pages
+
+    def create_prev_dot(self, l_pages: list, current_page: int) -> list:
+        l_pages.append(Page(current_page - 3, self.CAPTION_DOT))
+        return l_pages
+
+    @staticmethod
+    def create_center(l_pages: list, start: int, end: int) -> list:
+        for p in range(start, end):
+            l_pages.append(Page(p, str(p)))
+        return l_pages
+
+    def create_next_dot(self, l_pages: list, current_page: int) -> list:
+        l_pages.append(Page(current_page + 3, self.CAPTION_DOT))
+        return l_pages
+
+    def create_last_2(self, l_pages: list, next_page: int, max_page: int) -> list:
+        l_pages.append(Page(next_page, self.CAPTION_NEXT_PAGE))
+        l_pages.append(Page(max_page, str(max_page)))
+        return l_pages
+
+    @staticmethod
+    def mark_current(l_pages: list, current_page: int) -> list:
+        for p in l_pages:
+            if current_page == p.page:
+                p.is_current = True
+        return l_pages
