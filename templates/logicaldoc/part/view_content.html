@@ -1,13 +1,36 @@
 {% if i.is_image %}
-<div class="row d-flex flex-fill justify-content-center">
+<div class="row d-flex flex-fill justify-content-center my-1">
     <img src="{{ i.image }}" alt="{{ i.name }}">
 </div>
 {% elif i.is_pdf %}
-<div class="row d-flex flex-fill justify-content-center">
-    <object data="{{ i.content }}" type="application/pdf" height="700px"><p>{{ i.name }}</p></object>
+<div class="row d-flex flex-fill justify-content-center my-1">
+    <canvas id="pdf-canvas" style="border: solid black 1px;"></canvas>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+<script type="text/javascript">
+    {% load static %}
+    const url = "{% static i.content %}";
+    var pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
+    var loadingTask = pdfjsLib.getDocument(url);
+    loadingTask.promise.then(function (pdf) {
+        var pageNumber = {{ i.current_page }};
+        pdf.getPage(pageNumber).then(function (page) {
+            var viewport = page.getViewport({scale: 1});
+            var canvas = document.getElementById('pdf-canvas');
+            var context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            var renderContext = {
+                canvasContext: context,
+                viewport: viewport
+            };
+            page.render(renderContext);
+        });
+    });
+</script>
 {% elif i.is_txt %}
-<div class="row d-flex flex-fill justify-content-center">
+<div class="row d-flex flex-fill justify-content-center my-1">
     <label for="{{ i.id }}">{{ i.name }}</label>
     <textarea id="{{ i.id }}" rows="28">{{ i.content }}</textarea>
 </div>

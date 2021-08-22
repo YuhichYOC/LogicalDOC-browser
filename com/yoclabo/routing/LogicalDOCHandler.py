@@ -77,6 +77,12 @@ class LogicalDOCHandler:
         l_d.describe()
         return {'document': l_d}
 
+    def query_document_page_feed(self) -> dict:
+        l_d = Item.Document()
+        l_d.id = self.id
+        l_d.go_to_page(int(self.request.GET.get('page')))
+        return {'document': l_d}
+
     def run(self):
         pass
 
@@ -117,3 +123,9 @@ class LogicalDOCDocumentHandler(LogicalDOCHandler):
 
     def run(self) -> HttpResponse:
         return render(self.request, 'logicaldoc/view.html', self.query_document())
+
+
+class LogicalDOCDocumentPageFeedHandler(LogicalDOCHandler):
+
+    def run(self) -> HttpResponse:
+        return render(self.request, 'logicaldoc/view.html', self.query_document_page_feed())

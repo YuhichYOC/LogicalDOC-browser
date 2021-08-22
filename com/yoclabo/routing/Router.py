@@ -125,6 +125,17 @@ class LogicalDOCRouter(Router):
             return False
         return True
 
+    def is_document_page_feed(self) -> bool:
+        if not self.has_get_param('id'):
+            return False
+        if not self.has_get_param('type'):
+            return False
+        if not self.has_get_param('page'):
+            return False
+        if self.get_get_param('type') != 'pdf':
+            return False
+        return True
+
     def respond_root(self) -> HttpResponse:
         h = LogicalDOCHandler.LogicalDOCRootFolderHandler()
         return self.run_logicaldoc_handler(h, '')
@@ -145,6 +156,10 @@ class LogicalDOCRouter(Router):
         h = LogicalDOCHandler.LogicalDOCDocumentHandler()
         return self.run_logicaldoc_handler(h, self.get_get_param('id'))
 
+    def respond_document_page_feed(self) -> HttpResponse:
+        h = LogicalDOCHandler.LogicalDOCDocumentPageFeedHandler()
+        return self.run_logicaldoc_handler(h, self.get_get_param('id'))
+
     def run(self) -> HttpResponse:
         if self.is_folder_create():
             return self.respond_folder_create()
@@ -154,4 +169,6 @@ class LogicalDOCRouter(Router):
             return self.respond_root()
         if self.is_folder_get():
             return self.respond_folder()
+        if self.is_document_page_feed():
+            return self.respond_document_page_feed()
         return self.respond_document()

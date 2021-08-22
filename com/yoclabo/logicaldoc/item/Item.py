@@ -18,7 +18,11 @@
 #
 
 import base64
+import os
 
+import PyPDF4.pdf
+
+from browser.settings import BASE_DIR
 from com.yoclabo.logicaldoc.query import Query
 
 
@@ -206,6 +210,7 @@ class Document(Item):
         self.f_thumb: str = ''
         self.f_content: str = ''
         self.f_image: str = ''
+        self.f_current_page: int = 0
 
     @property
     def thumb(self) -> str:
@@ -218,6 +223,10 @@ class Document(Item):
     @property
     def image(self) -> str:
         return self.f_image
+
+    @property
+    def current_page(self) -> int:
+        return self.f_current_page
 
     def fetch_thumb(self) -> None:
         l_q = Query.DocumentQuery()
@@ -241,10 +250,53 @@ class Document(Item):
         if self.is_image:
             self.f_image = 'data:image/jpeg;base64,' + base64.b64encode(l_q.get_content()).decode()
         elif self.is_pdf:
-            self.f_content = 'data:application/pdf;base64,' + base64.b64encode(l_q.get_content()).decode()
+            self.download_content()
+            l_path = os.path.join(BASE_DIR, 'static', l_d['fileName'])
+            self.f_pages = Page(0, '').create_list(1, 1, 2, self.fetch_pdf_page_count(l_path))
+            self.f_current_page = 1
+            self.f_content = l_d['fileName']
         elif self.is_txt:
             self.f_content = l_q.get_content().decode()
         return None
+
+    def download_content(self) -> None:
+        l_q = Query.DocumentQuery()
+        l_q.id = self.id
+        l_d = l_q.get_document()
+        d = os.path.join(BASE_DIR, 'static', l_d['fileName'])
+        if os.path.exists(d):
+            os.remove(d)
+        l_f = open(d, 'wb')
+        l_f.write(l_q.get_content())
+        l_f.close()
+        return None
+
+    def go_to_page(self, arg: int) -> None:
+        l_q = Query.DocumentQuery()
+        l_q.id = self.id
+        l_d = l_q.get_document()
+        self.type = l_d['type']
+        self.name = l_d['fileName']
+        self.fill_ancestors(str(l_d['folderId']))
+        l_path = os.path.join(BASE_DIR, 'static', l_d['fileName'])
+        l_max_page = self.fetch_pdf_page_count(l_path)
+        if 1 > arg:
+            arg = 1
+        if l_max_page < arg:
+            arg = l_max_page
+        l_prev_page = arg - 1 if 1 < arg else 1
+        l_next_page = arg + 1 if l_max_page > arg else l_max_page
+        self.f_pages = Page(0, '').create_list(arg, l_prev_page, l_next_page, l_max_page)
+        self.f_current_page = arg
+        self.f_content = l_d['fileName']
+        return None
+
+    @staticmethod
+    def fetch_pdf_page_count(arg: str) -> int:
+        l_r = open(arg, 'rb')
+        l_page_count = PyPDF4.PdfFileReader(l_r).getNumPages()
+        l_r.close()
+        return l_page_count
 
 
 class Page:

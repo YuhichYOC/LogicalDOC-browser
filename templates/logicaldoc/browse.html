@@ -10,13 +10,16 @@
 </head>
 <body>
 <div class="container-fluid p-5">
-    <div class="row">
+    <div class="row my-1">
         {% include 'logicaldoc/part/breadcrumb.html' with i=folder %}
     </div>
-{% for i in folder.display_items %}
+    <div class="row my-1">
+        {% include 'logicaldoc/part/pagination.html' with i=folder %}
+    </div>
+    {% for i in folder.display_items %}
     {% include 'logicaldoc/part/folder_row.html' with i=i %}
-{% endfor %}
-    <div class="row">
+    {% endfor %}
+    <div class="row my-1">
         {% include 'logicaldoc/part/pagination.html' with i=folder %}
     </div>
 </div>
