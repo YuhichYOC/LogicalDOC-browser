@@ -5,7 +5,7 @@
     class="row align-items-center my-1 border-top border-bottom"
 {% endif %}
     style="min-height: 44px;">
-{% if i.is_folder %}
+{% if 'folder' == i.type %}
     <span class="col-2 text-center">
         {{ i.sequence }}
     </span>
@@ -18,7 +18,7 @@
     <span class="col-2 text-center">
         {{ i.type }}
     </span>
-{% elif i.is_image %}
+{% elif 'png' == i.type or 'jpg' == i.type %}
     <span class="col-2 text-center">
         {{ i.sequence }}
     </span>

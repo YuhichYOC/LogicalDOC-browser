@@ -1,8 +1,8 @@
-{% if i.is_image %}
+{% if 'png' == i.type or 'jpg' == i.type %}
 <div class="row d-flex flex-fill justify-content-center my-1">
-    <img src="{{ i.image }}" alt="{{ i.name }}">
+    <img src="{{ i.content }}" alt="{{ i.name }}">
 </div>
-{% elif i.is_pdf %}
+{% elif 'pdf' == i.type %}
 <div class="row d-flex flex-fill justify-content-center my-1">
     <canvas id="pdf-canvas" style="border: solid black 1px;"></canvas>
 </div>
@@ -14,7 +14,7 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
     var loadingTask = pdfjsLib.getDocument(url);
     loadingTask.promise.then(function (pdf) {
-        var pageNumber = {{ i.current_page }};
+        var pageNumber = {{ i.page }};
         pdf.getPage(pageNumber).then(function (page) {
             var viewport = page.getViewport({scale: 1});
             var canvas = document.getElementById('pdf-canvas');
@@ -29,10 +29,17 @@
         });
     });
 </script>
-{% elif i.is_txt %}
+{% elif 'txt' == i.type %}
 <div class="row d-flex flex-fill justify-content-center my-1">
     <label for="{{ i.id }}">{{ i.name }}</label>
     <textarea id="{{ i.id }}" rows="28">{{ i.content }}</textarea>
+</div>
+{% elif 'mp4' == i.type or 'm4a' == i.type or 'mp3' == i.type %}
+<div class="row d-flex flex-fill justify-content-center my-1">
+    <video controls style="width: 100%">
+        {% load static %}
+        <source src={% static i.content %}>
+    </video>
 </div>
 {% else %}
 {% endif %}

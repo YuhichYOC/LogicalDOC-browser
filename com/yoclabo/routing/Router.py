@@ -89,24 +89,6 @@ class BrowserRouter(Router):
 
 class LogicalDOCRouter(Router):
 
-    def is_root_get(self) -> bool:
-        if self.has_get_param('id'):
-            return False
-        if self.has_get_param('type'):
-            return False
-        return True
-
-    def is_folder_get(self) -> bool:
-        if not self.has_get_param('id'):
-            return False
-        if not self.has_get_param('type'):
-            return False
-        if not self.has_get_param('page'):
-            return False
-        if self.get_get_param('type') != 'folder':
-            return False
-        return True
-
     def is_folder_create(self) -> bool:
         if not self.has_post_param('id'):
             return False
@@ -125,6 +107,24 @@ class LogicalDOCRouter(Router):
             return False
         return True
 
+    def is_root_get(self) -> bool:
+        if self.has_get_param('id'):
+            return False
+        if self.has_get_param('type'):
+            return False
+        return True
+
+    def is_folder_get(self) -> bool:
+        if not self.has_get_param('id'):
+            return False
+        if not self.has_get_param('type'):
+            return False
+        if not self.has_get_param('page'):
+            return False
+        if self.get_get_param('type') != 'folder':
+            return False
+        return True
+
     def is_document_page_feed(self) -> bool:
         if not self.has_get_param('id'):
             return False
@@ -136,13 +136,14 @@ class LogicalDOCRouter(Router):
             return False
         return True
 
-    def respond_root(self) -> HttpResponse:
-        h = LogicalDOCHandler.LogicalDOCRootFolderHandler()
-        return self.run_logicaldoc_handler(h, '')
-
-    def respond_folder(self) -> HttpResponse:
-        h = LogicalDOCHandler.LogicalDOCFolderHandler()
-        return self.run_logicaldoc_handler(h, self.get_get_param('id'))
+    def is_document_get(self) -> bool:
+        if not self.has_get_param('id'):
+            return False
+        if not self.has_get_param('type'):
+            return False
+        if self.get_get_param('type') == 'folder':
+            return False
+        return True
 
     def respond_folder_create(self) -> HttpResponse:
         h = LogicalDOCHandler.LogicalDOCCreateFolderHandler()
@@ -152,12 +153,20 @@ class LogicalDOCRouter(Router):
         h = LogicalDOCHandler.LogicalDOCCreateDocumentHandler()
         return self.run_logicaldoc_handler(h, '')
 
-    def respond_document(self) -> HttpResponse:
-        h = LogicalDOCHandler.LogicalDOCDocumentHandler()
+    def respond_root(self) -> HttpResponse:
+        h = LogicalDOCHandler.LogicalDOCRootFolderHandler()
+        return self.run_logicaldoc_handler(h, '')
+
+    def respond_folder(self) -> HttpResponse:
+        h = LogicalDOCHandler.LogicalDOCFolderHandler()
         return self.run_logicaldoc_handler(h, self.get_get_param('id'))
 
     def respond_document_page_feed(self) -> HttpResponse:
         h = LogicalDOCHandler.LogicalDOCDocumentPageFeedHandler()
+        return self.run_logicaldoc_handler(h, self.get_get_param('id'))
+
+    def respond_document(self) -> HttpResponse:
+        h = LogicalDOCHandler.LogicalDOCDocumentHandler()
         return self.run_logicaldoc_handler(h, self.get_get_param('id'))
 
     def run(self) -> HttpResponse:
@@ -171,4 +180,7 @@ class LogicalDOCRouter(Router):
             return self.respond_folder()
         if self.is_document_page_feed():
             return self.respond_document_page_feed()
-        return self.respond_document()
+        if self.is_document_get():
+            return self.respond_document()
+        h = BrowserHandler.BrowserHandler()
+        return self.run_browser_handler(h)

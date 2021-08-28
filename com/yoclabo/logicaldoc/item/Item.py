@@ -20,21 +20,20 @@
 import base64
 import os
 
-import PyPDF4.pdf
+import PyPDF4
 
 from browser.settings import BASE_DIR
-from com.yoclabo.logicaldoc.query import Query
+from com.yoclabo.logicaldoc.query.Query import DocumentQuery, FolderQuery
 
 
-class Item:
+class AbstractItem:
 
     def __init__(self):
         self.f_id: str = ''
         self.f_type: str = ''
         self.f_name: str = ''
-        self.f_sequence: int = 0
         self.f_ancestors: list = []
-        self.f_pages: list = []
+        self.f_sequence: int = 0
 
     @property
     def id(self) -> str:
@@ -45,28 +44,12 @@ class Item:
         return self.f_type
 
     @property
-    def is_folder(self) -> bool:
-        return self.type == 'folder'
-
-    @property
-    def is_image(self) -> bool:
-        if self.type == 'png':
-            return True
-        if self.type == 'jpg':
-            return True
-        return False
-
-    @property
-    def is_pdf(self) -> bool:
-        return self.type == 'pdf'
-
-    @property
-    def is_txt(self) -> bool:
-        return self.type == 'txt'
-
-    @property
     def name(self) -> str:
         return self.f_name
+
+    @property
+    def ancestors(self) -> list:
+        return self.f_ancestors
 
     @property
     def sequence(self) -> int:
@@ -74,19 +57,7 @@ class Item:
 
     @property
     def is_even_row(self) -> bool:
-        return True if 0 == self.f_sequence % 2 else False
-
-    @property
-    def ancestors(self) -> list:
-        return self.f_ancestors
-
-    @property
-    def ancestors_count(self) -> int:
-        return len(self.f_ancestors)
-
-    @property
-    def pages(self) -> list:
-        return self.f_pages
+        return 0 == self.f_sequence % 2
 
     @id.setter
     def id(self, arg: str):
@@ -106,207 +77,263 @@ class Item:
 
     def fill_ancestors(self, folder_id: str) -> None:
         self.f_ancestors.clear()
-        l_f = Query.FolderQuery()
-        l_f.id = folder_id
-        for a in l_f.get_path():
-            add = Folder()
-            add.id = str(a['id'])
-            add.type = 'folder'
-            add.name = a['name']
-            self.f_ancestors.append(add)
-        if self.is_folder:
+        l_fq = FolderQuery()
+        l_fq.id = folder_id
+        for a in l_fq.get_path():
+            self.f_ancestors.append(Folder.new(str(a['id']), 'folder', a['name']))
+        if 'folder' == self.f_type:
             del self.f_ancestors[-1]
         return None
 
 
-class Folder(Item):
+class Folder(AbstractItem):
 
     def __init__(self):
         super().__init__()
-        self.f_items: list = []
-        self.f_items_total: int = 0
-        self.f_current_page: int = 0
-        self.f_display_items: list = []
+        self.f_children: list = []
+        self.f_page: int = 0
+        self.f_pages: list = []
         self.ITEMS_PER_PAGE: int = 10
 
     @property
+    def children(self) -> list:
+        return self.f_children
+
+    @property
+    def pages(self) -> list:
+        return self.f_pages
+
+    @property
     def max_page(self) -> int:
-        if 0 == self.f_items_total:
+        if 0 == len(self.f_children):
             return 1
-        # Round up "f_items_total" divided by "ITEMS_PER_PAGE" to get the maximum number of pages.
-        return -(-self.f_items_total // self.ITEMS_PER_PAGE)
+        # Round up len(self.f_children) divided by "ITEMS_PER_PAGE" to get the maximum number of pages.
+        return -(-len(self.f_children) // self.ITEMS_PER_PAGE)
 
     @property
     def prev_page(self) -> int:
-        return self.f_current_page - 1 if 1 < self.f_current_page else 1
+        return self.f_page - 1 if 1 < self.f_page else 1
 
     @property
     def next_page(self) -> int:
-        return self.f_current_page + 1 if self.max_page > self.f_current_page else self.max_page
+        return self.f_page + 1 if self.max_page > self.f_page else self.max_page
 
-    @property
-    def display_items(self) -> list:
-        return self.f_display_items
+    @staticmethod
+    def new(a_id: str, a_type: str, a_name: str):
+        l_f = Folder()
+        l_f.id = a_id
+        l_f.type = a_type
+        l_f.name = a_name
+        return l_f
 
     def describe_root_folder(self) -> None:
-        l_q = Query.FolderQuery()
-        l_q.path = '/'
-        self.id = str(l_q.find_by_path()['id'])
+        l_fq = FolderQuery()
+        l_fq.path = '/'
+        self.id = str(l_fq.find_by_path()['id'])
         self.describe()
         return None
 
     def describe(self) -> None:
-        self.f_items.clear()
-        l_q = Query.FolderQuery()
-        l_q.id = self.id
-        self.name = l_q.get_folder()['name']
-        for f in l_q.list_children():
-            add = Folder()
-            add.id = str(f['id'])
-            add.type = 'folder'
-            add.name = f['name']
-            add.sequence = len(self.f_items) + 1
-            self.f_items.append(add)
-        for d in l_q.list_document():
-            add = Document()
-            add.id = str(d['id'])
-            add.type = d['type']
-            add.name = d['fileName']
-            add.sequence = len(self.f_items) + 1
-            self.f_items.append(add)
-        self.f_items_total = len(self.f_items)
-        self.f_current_page = 1
-        self.f_pages = Page(0, '').create_list(self.f_current_page, self.prev_page, self.next_page, self.max_page)
+        self.f_children.clear()
+        l_fq = FolderQuery()
+        l_fq.id = self.id
+        self.name = l_fq.get_folder()['name']
+        for f in l_fq.list_children():
+            l_add = Folder.new(str(f['id']), 'folder', f['name'])
+            l_add.sequence = len(self.f_children) + 1
+            self.f_children.append(l_add)
+        for d in l_fq.list_document():
+            l_add = AbstractDocument.new(str(d['id']), d['type'], d['fileName'])
+            l_add.sequence = len(self.f_children) + 1
+            self.f_children.append(l_add)
+        self.f_page = 1
+        self.f_pages = Paginator().create_list(1, self.prev_page, self.next_page, self.max_page)
         self.fill_ancestors(self.id)
         return None
 
     def go_to_page(self, arg: int) -> None:
-        self.f_current_page = arg
-        if 1 > self.f_current_page:
-            self.f_current_page = 1
-        if self.max_page < self.f_current_page:
-            self.f_current_page = self.max_page
-        self.f_pages = Page(0, '').create_list(self.f_current_page, self.prev_page, self.next_page, self.max_page)
+        self.f_page = arg
+        self.f_page = 1 if 1 > self.f_page else self.f_page
+        self.f_page = self.max_page if self.max_page < self.f_page else self.f_page
+        self.f_pages = Paginator().create_list(self.f_page, self.prev_page, self.next_page, self.max_page)
+        self.slice()
         self.fetch_thumb()
         return None
 
-    def fetch_thumb(self) -> None:
-        l_start = self.ITEMS_PER_PAGE * (self.f_current_page - 1)
+    def slice(self) -> None:
+        l_start = self.ITEMS_PER_PAGE * (self.f_page - 1)
         l_end = l_start + self.ITEMS_PER_PAGE
-        if self.f_items_total < l_end:
-            l_end = self.f_items_total
-        self.f_display_items.clear()
+        l_end = len(self.f_children) if len(self.f_children) < l_end else l_end
+        l_display_items = []
         for i in range(l_start, l_end):
-            if self.f_items[i].is_image:
-                self.f_items[i].fetch_thumb()
-            self.f_display_items.append(self.f_items[i])
+            l_display_items.append(self.f_children[i])
+        self.f_children.clear()
+        self.f_children.extend(l_display_items)
+        return None
+
+    def fetch_thumb(self) -> None:
+        for c in self.f_children:
+            if 'png' == c.type or 'jpg' == c.type:
+                c.fetch_thumb()
         return None
 
 
-class Document(Item):
+class AbstractDocument(AbstractItem):
 
     def __init__(self):
         super().__init__()
-        self.f_thumb: str = ''
         self.f_content: str = ''
-        self.f_image: str = ''
-        self.f_current_page: int = 0
-
-    @property
-    def thumb(self) -> str:
-        return self.f_thumb
 
     @property
     def content(self) -> str:
         return self.f_content
 
-    @property
-    def image(self) -> str:
-        return self.f_image
+    @staticmethod
+    def new(a_id: str, a_type: str, a_name: str, a_describe: bool = False):
+        if 'png' == a_type or 'jpg' == a_type:
+            l_d = Image()
+        elif 'pdf' == a_type:
+            l_d = Pdf()
+        elif 'txt' == a_type:
+            l_d = Text()
+        elif 'mp4' == a_type or 'm4a' == a_type or 'mp3' == a_type:
+            l_d = Media()
+        else:
+            l_d = AbstractDocument()
+        l_d.id = a_id
+        l_d.type = a_type
+        l_d.name = a_name
+        if a_describe:
+            l_d.describe()
+        return l_d
 
-    @property
-    def current_page(self) -> int:
-        return self.f_current_page
-
-    def fetch_thumb(self) -> None:
-        l_q = Query.DocumentQuery()
-        l_q.id = self.id
-        self.f_thumb = 'data:image/jpeg;base64,' + base64.b64encode(l_q.get_thumb()).decode()
-        return None
-
-    def create_thumb(self) -> None:
-        l_q = Query.DocumentQuery()
-        l_q.id = self.id
-        l_q.create_thumb()
-        return None
-
-    def describe(self) -> None:
-        l_q = Query.DocumentQuery()
-        l_q.id = self.id
-        l_d = l_q.get_document()
+    def describe(self) -> DocumentQuery:
+        l_dq = DocumentQuery()
+        l_dq.id = self.id
+        l_d = l_dq.get_document()
         self.type = l_d['type']
         self.name = l_d['fileName']
         self.fill_ancestors(str(l_d['folderId']))
-        if self.is_image:
-            self.f_image = 'data:image/jpeg;base64,' + base64.b64encode(l_q.get_content()).decode()
-        elif self.is_pdf:
-            self.download_content()
-            l_path = os.path.join(BASE_DIR, 'static', l_d['fileName'])
-            self.f_pages = Page(0, '').create_list(1, 1, 2, self.fetch_pdf_page_count(l_path))
-            self.f_current_page = 1
-            self.f_content = l_d['fileName']
-        elif self.is_txt:
-            self.f_content = l_q.get_content().decode()
-        return None
+        self.f_content = l_d['fileName']
+        return l_dq
 
     def download_content(self) -> None:
-        l_q = Query.DocumentQuery()
-        l_q.id = self.id
-        l_d = l_q.get_document()
-        d = os.path.join(BASE_DIR, 'static', l_d['fileName'])
-        if os.path.exists(d):
-            os.remove(d)
-        l_f = open(d, 'wb')
-        l_f.write(l_q.get_content())
+        l_dq = DocumentQuery()
+        l_dq.id = self.id
+        l_d = l_dq.get_document()
+        l_p = os.path.join(BASE_DIR, 'static', l_d['fileName'])
+        if os.path.exists(l_p):
+            os.remove(l_p)
+        l_f = open(l_p, 'wb')
+        l_f.write(l_dq.get_content())
         l_f.close()
         return None
 
-    def go_to_page(self, arg: int) -> None:
-        l_q = Query.DocumentQuery()
-        l_q.id = self.id
-        l_d = l_q.get_document()
-        self.type = l_d['type']
-        self.name = l_d['fileName']
-        self.fill_ancestors(str(l_d['folderId']))
-        l_path = os.path.join(BASE_DIR, 'static', l_d['fileName'])
-        l_max_page = self.fetch_pdf_page_count(l_path)
-        if 1 > arg:
-            arg = 1
-        if l_max_page < arg:
-            arg = l_max_page
-        l_prev_page = arg - 1 if 1 < arg else 1
-        l_next_page = arg + 1 if l_max_page > arg else l_max_page
-        self.f_pages = Page(0, '').create_list(arg, l_prev_page, l_next_page, l_max_page)
-        self.f_current_page = arg
+
+class Image(AbstractDocument):
+
+    def __init__(self):
+        super().__init__()
+        self.f_thumb: str = ''
+
+    @property
+    def thumb(self) -> str:
+        return self.f_thumb
+
+    def describe(self) -> None:
+        l_dq = super().describe()
+        self.f_content = 'data:image/jpeg;base64,' + base64.b64encode(l_dq.get_content()).decode()
+        return None
+
+    def fetch_thumb(self) -> None:
+        l_dq = DocumentQuery()
+        l_dq.id = self.id
+        self.f_thumb = 'data:image/jpeg;base64,' + base64.b64encode(l_dq.get_thumb()).decode()
+        return None
+
+    def create_thumb(self) -> None:
+        l_dq = DocumentQuery()
+        l_dq.id = self.id
+        l_dq.create_thumb()
+        return None
+
+
+class Pdf(AbstractDocument):
+
+    def __init__(self):
+        super().__init__()
+        self.f_page: int = 0
+        self.f_pages: list = []
+
+    @property
+    def page(self) -> int:
+        return self.f_page
+
+    @property
+    def pages(self) -> list:
+        return self.f_pages
+
+    def describe(self) -> None:
+        l_dq = super().describe()
+        l_d = l_dq.get_document()
+        self.download_content()
+        l_p = os.path.join(BASE_DIR, 'static', l_d['fileName'])
+        self.f_page = 1
+        self.f_pages = Paginator().create_list(1, 1, 2, self.fetch_pdf_page_count(l_p))
         self.f_content = l_d['fileName']
         return None
 
     @staticmethod
     def fetch_pdf_page_count(arg: str) -> int:
-        l_r = open(arg, 'rb')
-        l_page_count = PyPDF4.PdfFileReader(l_r).getNumPages()
-        l_r.close()
+        l_f = open(arg, 'rb')
+        l_page_count: int = PyPDF4.PdfFileReader(l_f).getNumPages()
+        l_f.close()
         return l_page_count
 
+    def go_to_page(self, arg: int) -> None:
+        l_dq = DocumentQuery()
+        l_dq.id = self.id
+        l_d = l_dq.get_document()
+        self.type = l_d['type']
+        self.name = l_d['fileName']
+        self.fill_ancestors(str(l_d['folderId']))
+        l_p = os.path.join(BASE_DIR, 'static', l_d['fileName'])
+        l_max_page = self.fetch_pdf_page_count(l_p)
+        arg = 1 if 1 > arg else arg
+        arg = l_max_page if l_max_page < arg else arg
+        l_prev_page = arg - 1 if 1 < arg else 1
+        l_next_page = arg + 1 if l_max_page > arg else l_max_page
+        self.f_page = arg
+        self.f_pages = Paginator().create_list(arg, l_prev_page, l_next_page, l_max_page)
+        self.f_content = l_d['fileName']
+        return None
 
-class Page:
 
-    def __init__(self, p: int, t: str):
-        self.f_page: int = p
-        self.f_text: str = t
+class Text(AbstractDocument):
+
+    def describe(self) -> None:
+        l_dq = super().describe()
+        self.f_content = l_dq.get_content().decode()
+        return None
+
+
+class Media(AbstractDocument):
+
+    def describe(self) -> None:
+        l_dq = super().describe()
+        self.download_content()
+        self.f_content = l_dq.get_document()['fileName']
+        return None
+
+
+class Paginator:
+
+    def __init__(self):
+        self.f_page: int = 0
+        self.f_text: str = ''
         self.f_is_current: bool = False
-        self.CAPTION_PREV_PAGE: str = 'Previous'
-        self.CAPTION_NEXT_PAGE: str = 'Next'
+        self.CAPTION_PREV: str = 'Previous'
+        self.CAPTION_NEXT: str = 'Next'
         self.CAPTION_DOT: str = '...'
 
     @property
@@ -320,6 +347,14 @@ class Page:
     @property
     def is_current(self) -> bool:
         return self.f_is_current
+
+    @page.setter
+    def page(self, arg: int):
+        self.f_page = arg
+
+    @text.setter
+    def text(self, arg: str):
+        self.f_text = arg
 
     @is_current.setter
     def is_current(self, arg: bool):
@@ -350,38 +385,59 @@ class Page:
         l_pages = self.create_first_2(l_pages, prev_page)
         l_pages = self.create_prev_dot(l_pages, current_page)
         l_pages = self.create_center(l_pages, current_page - 2, current_page + 3)
-        l_pages = self.create_next_dot(l_pages, current_page)
+        l_pages = self.create_next_dot(l_pages, next_page)
         l_pages = self.create_last_2(l_pages, next_page, max_page)
         l_pages = self.mark_current(l_pages, current_page)
         return l_pages
 
-    def create_first_2(self, l_pages: list, prev_page: int) -> list:
-        l_pages.append(Page(1, '1'))
-        l_pages.append(Page(prev_page, self.CAPTION_PREV_PAGE))
-        return l_pages
+    def create_first_2(self, pages: list, prev_page: int) -> list:
+        l_add = Paginator()
+        l_add.page = 1
+        l_add.text = '1'
+        pages.append(l_add)
+        l_add = Paginator()
+        l_add.page = prev_page
+        l_add.text = self.CAPTION_PREV
+        pages.append(l_add)
+        return pages
 
-    def create_prev_dot(self, l_pages: list, current_page: int) -> list:
-        l_pages.append(Page(current_page - 3, self.CAPTION_DOT))
-        return l_pages
+    def create_prev_dot(self, pages: list, current_page: int) -> list:
+        l_add = Paginator()
+        l_add.page = current_page - 3
+        l_add.text = self.CAPTION_DOT
+        pages.append(l_add)
+        return pages
 
     @staticmethod
-    def create_center(l_pages: list, start: int, end: int) -> list:
+    def create_center(pages: list, start: int, end: int) -> list:
         for p in range(start, end):
-            l_pages.append(Page(p, str(p)))
-        return l_pages
+            l_add = Paginator()
+            l_add.page = p
+            l_add.text = str(p)
+            pages.append(l_add)
+        return pages
 
-    def create_next_dot(self, l_pages: list, current_page: int) -> list:
-        l_pages.append(Page(current_page + 3, self.CAPTION_DOT))
-        return l_pages
+    def create_next_dot(self, pages: list, current_page: int) -> list:
+        l_add = Paginator()
+        l_add.page = current_page + 3
+        l_add.text = self.CAPTION_DOT
+        pages.append(l_add)
+        return pages
 
-    def create_last_2(self, l_pages: list, next_page: int, max_page: int) -> list:
-        l_pages.append(Page(next_page, self.CAPTION_NEXT_PAGE))
-        l_pages.append(Page(max_page, str(max_page)))
-        return l_pages
+    def create_last_2(self, pages: list, next_page: int, max_page: int) -> list:
+        l_add = Paginator()
+        l_add.page = next_page
+        l_add.text = self.CAPTION_NEXT
+        pages.append(l_add)
+        l_add = Paginator()
+        l_add.page = max_page
+        l_add.text = str(max_page)
+        pages.append(l_add)
+        return pages
 
     @staticmethod
-    def mark_current(l_pages: list, current_page: int) -> list:
-        for p in l_pages:
+    def mark_current(pages: list, current_page: int) -> list:
+        for p in pages:
             if current_page == p.page:
                 p.is_current = True
-        return l_pages
+        return pages

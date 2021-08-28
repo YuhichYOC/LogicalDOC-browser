@@ -13,13 +13,13 @@
     <div class="row my-1">
         {% include 'logicaldoc/part/breadcrumb.html' with i=document %}
     </div>
-    {% if document.is_pdf %}
+    {% if 'pdf' == document.type %}
     <div class="row my-1">
         {% include 'logicaldoc/part/pagination.html' with i=document %}
     </div>
     {% endif %}
     {% include 'logicaldoc/part/view_content.html' with i=document %}
-    {% if document.is_pdf %}
+    {% if 'pdf' == document.type %}
     <div class="row my-1">
         {% include 'logicaldoc/part/pagination.html' with i=document %}
     </div>

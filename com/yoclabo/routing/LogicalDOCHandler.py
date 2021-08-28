@@ -20,7 +20,7 @@
 from django.http.response import HttpResponse
 from django.shortcuts import render
 
-from com.yoclabo.logicaldoc.item import Item
+from com.yoclabo.logicaldoc.item.Item import AbstractDocument, Folder, Pdf
 from com.yoclabo.logicaldoc.query import Query
 
 
@@ -57,14 +57,14 @@ class LogicalDOCHandler:
 
     @staticmethod
     def query_root_folder() -> dict:
-        l_f = Item.Folder()
+        l_f = Folder()
         l_f.type = 'folder'
         l_f.describe_root_folder()
         l_f.go_to_page(1)
         return {'folder': l_f}
 
     def query_folder(self) -> dict:
-        l_f = Item.Folder()
+        l_f = Folder()
         l_f.id = self.id
         l_f.type = 'folder'
         l_f.describe()
@@ -72,13 +72,11 @@ class LogicalDOCHandler:
         return {'folder': l_f}
 
     def query_document(self) -> dict:
-        l_d = Item.Document()
-        l_d.id = self.id
-        l_d.describe()
+        l_d = AbstractDocument.new(self.id, self.request.GET.get('type'), '', True)
         return {'document': l_d}
 
     def query_document_page_feed(self) -> dict:
-        l_d = Item.Document()
+        l_d = Pdf()
         l_d.id = self.id
         l_d.go_to_page(int(self.request.GET.get('page')))
         return {'document': l_d}

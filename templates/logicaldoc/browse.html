@@ -16,7 +16,7 @@
     <div class="row my-1">
         {% include 'logicaldoc/part/pagination.html' with i=folder %}
     </div>
-    {% for i in folder.display_items %}
+    {% for i in folder.children %}
     {% include 'logicaldoc/part/folder_row.html' with i=i %}
     {% endfor %}
     <div class="row my-1">
