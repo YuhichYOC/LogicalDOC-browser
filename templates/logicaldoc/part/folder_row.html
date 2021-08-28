@@ -6,42 +6,42 @@
 {% endif %}
     style="min-height: 44px;">
 {% if 'folder' == i.type %}
-    <span class="col-2 text-center">
+    <span class="col-sm-12 col-lg-2 text-center">
         {{ i.sequence }}
     </span>
-    <span class="col-4 text-center d-flex">
+    <span class="col-sm-12 col-lg-4 text-center d-flex">
         <a class="flex-fill" href=?id={{ i.id }}&type={{ i.type }}&page=1>{{ i.name }}</a>
     </span>
-    <span class="col-4 text-center">
+    <span class="d-none d-lg-block col-lg-4 text-center">
         &nbsp;
     </span>
-    <span class="col-2 text-center">
+    <span class="col-sm-12 col-lg-2 text-center">
         {{ i.type }}
     </span>
 {% elif 'png' == i.type or 'jpg' == i.type %}
-    <span class="col-2 text-center">
+    <span class="col-sm-12 col-lg-2 text-center">
         {{ i.sequence }}
     </span>
-    <span class="col-4 text-center d-flex">
+    <span class="col-sm-12 col-lg-4 text-center d-flex">
         <a class="flex-fill" href=?id={{ i.id }}&type={{ i.type }}>{{ i.name }}</a>
     </span>
-    <span class="col-4 text-center">
+    <span class="col-sm-12 col-lg-4 text-center">
         <img src="{{ i.thumb }}" alt="{{ i.name }}">
     </span>
-    <span class="col-2 text-center">
+    <span class="col-sm-12 col-lg-2 text-center">
         {{ i.type }}
     </span>
 {% else %}
-    <span class="col-2 text-center">
+    <span class="col-sm-12 col-lg-2 text-center">
         {{ i.sequence }}
     </span>
-    <span class="col-4 text-center d-flex">
+    <span class="col-sm-12 col-lg-4 text-center d-flex">
         <a class="flex-fill" href=?id={{ i.id }}&type={{ i.type }}>{{ i.name }}</a>
     </span>
-    <span class="col-4 text-center">
+    <span class="d-none d-lg-block col-lg-4 text-center">
         &nbsp;
     </span>
-    <span class="col-2 text-center">
+    <span class="col-sm-12 col-lg-2 text-center">
         {{ i.type }}
     </span>
 {% endif %}
