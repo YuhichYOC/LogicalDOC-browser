@@ -4,30 +4,43 @@
 </div>
 {% elif 'pdf' == i.type %}
 <div class="row d-flex flex-fill justify-content-center my-1">
-    <canvas id="pdf-canvas" style="border: solid black 1px;"></canvas>
+<span>
+    <input type="button" class="resize-font-xxl" value="Previous" onclick="pageFeed(pageNumber - 1);">
+    <input type="button" class="resize-font-xxl" value="Next" onclick="pageFeed(pageNumber + 1);">
+</span>
+    <canvas id="pdf-canvas" class="col-12" style="border: solid black 1px;"></canvas>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
 <script type="text/javascript">
     {% load static %}
+    let p;
+    let pageNumber;
     const url = "{% static i.content %}";
-    var pdfjsLib = window['pdfjs-dist/build/pdf'];
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
-    var loadingTask = pdfjsLib.getDocument(url);
+    const loadingTask = pdfjsLib.getDocument(url);
     loadingTask.promise.then(function (pdf) {
-        var pageNumber = {{ i.page }};
-        pdf.getPage(pageNumber).then(function (page) {
-            var viewport = page.getViewport({scale: 1});
-            var canvas = document.getElementById('pdf-canvas');
-            var context = canvas.getContext('2d');
+        p = pdf;
+        pageNumber = {{ i.page }};
+        pageFeed(pageNumber);
+    });
+
+    function pageFeed(i) {
+        pageNumber = 1 > i ? 1 : i;
+        pageNumber = p._pdfInfo.numPages < i ? p._pdfInfo.numPages : pageNumber;
+        p.getPage(pageNumber).then(function (page) {
+            const viewport = page.getViewport({scale: 1});
+            const canvas = document.getElementById('pdf-canvas');
+            const context = canvas.getContext('2d');
             canvas.height = viewport.height;
             canvas.width = viewport.width;
-            var renderContext = {
+            const renderContext = {
                 canvasContext: context,
                 viewport: viewport
             };
             page.render(renderContext);
         });
-    });
+    }
 </script>
 {% elif 'txt' == i.type %}
 <div class="row d-flex flex-fill justify-content-center my-1">

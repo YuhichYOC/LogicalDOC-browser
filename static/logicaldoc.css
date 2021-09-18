@@ -1,0 +1,22 @@
+@media screen and (max-width: 991px) {
+    .resize-font-l {
+        font-size: large;
+    }
+    .resize-font-xl {
+        font-size: x-large;
+    }
+    .resize-font-xxl {
+        font-size: xx-large;
+    }
+}
+@media screen and (min-width: 992px) {
+    .resize-font-l {
+        font-size: medium;
+    }
+    .resize-font-xl {
+        font-size: medium;
+    }
+    .resize-font-xxl {
+        font-size: medium;
+    }
+}

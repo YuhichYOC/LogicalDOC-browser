@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -7,17 +8,13 @@
           rel="stylesheet"
           integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We"
           crossorigin="anonymous">
+    <link href="{% static 'logicaldoc.css' %}" rel="stylesheet" type="text/css">
 </head>
 <body>
 <div class="container-fluid p-5">
     <div class="row my-1">
         {% include 'logicaldoc/part/breadcrumb.html' with i=document %}
     </div>
-    {% if 'pdf' == document.type %}
-    <div class="row my-1">
-        {% include 'logicaldoc/part/pagination.html' with i=document %}
-    </div>
-    {% endif %}
     {% include 'logicaldoc/part/view_content.html' with i=document %}
     {% if 'pdf' == document.type %}
     <div class="row my-1">
