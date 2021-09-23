@@ -7,7 +7,11 @@
         </li>
         {% else %}
         <li class="page-item">
+        {% if 'folder' == i.type and i.is_tile %}
+            <a class="page-link" href=?id={{ i.id }}&type={{ i.type }}&page={{ p.page }}&tile=true>{{ p.text }}</a>
+        {% else %}
             <a class="page-link" href=?id={{ i.id }}&type={{ i.type }}&page={{ p.page }}>{{ p.text }}</a>
+        {% endif %}
         </li>
         {% endif %}
     {% endfor %}

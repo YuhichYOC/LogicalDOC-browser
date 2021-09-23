@@ -93,7 +93,9 @@ class Folder(AbstractItem):
         self.f_children: list = []
         self.f_page: int = 0
         self.f_pages: list = []
+        self.f_is_tile: bool = False
         self.ITEMS_PER_PAGE: int = 10
+        self.TILE_ITEMS_PER_PAGE: int = 30
 
     @property
     def children(self) -> list:
@@ -104,9 +106,15 @@ class Folder(AbstractItem):
         return self.f_pages
 
     @property
+    def page(self) -> int:
+        return self.f_page
+
+    @property
     def max_page(self) -> int:
         if 0 == len(self.f_children):
             return 1
+        if self.is_tile:
+            return -(-len(self.f_children) // self.TILE_ITEMS_PER_PAGE)
         # Round up len(self.f_children) divided by "ITEMS_PER_PAGE" to get the maximum number of pages.
         return -(-len(self.f_children) // self.ITEMS_PER_PAGE)
 
@@ -117,6 +125,14 @@ class Folder(AbstractItem):
     @property
     def next_page(self) -> int:
         return self.f_page + 1 if self.max_page > self.f_page else self.max_page
+
+    @property
+    def is_tile(self) -> bool:
+        return self.f_is_tile
+
+    @is_tile.setter
+    def is_tile(self, arg: bool):
+        self.f_is_tile = arg
 
     @staticmethod
     def new(a_id: str, a_type: str, a_name: str):
@@ -161,8 +177,9 @@ class Folder(AbstractItem):
         return None
 
     def slice(self) -> None:
-        l_start = self.ITEMS_PER_PAGE * (self.f_page - 1)
-        l_end = l_start + self.ITEMS_PER_PAGE
+        l_start = self.TILE_ITEMS_PER_PAGE * (self.f_page - 1) if self.is_tile \
+            else self.ITEMS_PER_PAGE * (self.f_page - 1)
+        l_end = l_start + self.TILE_ITEMS_PER_PAGE if self.is_tile else l_start + self.ITEMS_PER_PAGE
         l_end = len(self.f_children) if len(self.f_children) < l_end else l_end
         l_display_items = []
         for i in range(l_start, l_end):

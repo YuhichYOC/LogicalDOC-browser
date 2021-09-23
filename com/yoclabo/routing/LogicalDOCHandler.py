@@ -67,6 +67,8 @@ class LogicalDOCHandler:
         l_f = Folder()
         l_f.id = self.id
         l_f.type = 'folder'
+        if self.request.GET.get('tile') is not None:
+            l_f.is_tile = True
         l_f.describe()
         l_f.go_to_page(int(self.request.GET.get('page')))
         return {'folder': l_f}

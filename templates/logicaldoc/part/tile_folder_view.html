@@ -1,0 +1,9 @@
+<div class="row my-1">
+    {% for i in folder.children %}
+    <span class="col-4 text-center my-1 border-top border-bottom" style="overflow: hidden">
+        <a href=?id={{ i.id }}&type={{ i.type }}>
+            <img src="{{ i.thumb }}" alt="{{ i.name }}">
+        </a>
+    </span>
+    {% endfor %}
+</div>

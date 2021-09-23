@@ -1,7 +1,11 @@
 <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
     <ol class="breadcrumb">
     {% for a in i.ancestors %}
+    {% if i.is_tile %}
+        <li class="breadcrumb-item"><a href=?id={{ a.id }}&type={{ a.type }}&page=1&tile=true>{{ a.name }}</a></li>
+    {% else %}
         <li class="breadcrumb-item"><a href=?id={{ a.id }}&type={{ a.type }}&page=1>{{ a.name }}</a></li>
+    {% endif %}
     {% endfor %}
         <li class="breadcrumb-item active" aria-current="page">{{ i.name }}</li>
     </ol>
