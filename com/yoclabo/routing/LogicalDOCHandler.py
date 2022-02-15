@@ -20,7 +20,7 @@
 from django.http.response import HttpResponse
 from django.shortcuts import render
 
-from com.yoclabo.logicaldoc.item.Item import AbstractDocument, Folder, Pdf
+from com.yoclabo.logicaldoc.item.Item import AbstractDocument, Image, Folder, Pdf
 from com.yoclabo.logicaldoc.query import Query
 
 
@@ -59,8 +59,7 @@ class LogicalDOCHandler:
     def query_root_folder() -> dict:
         l_f = Folder()
         l_f.type = 'folder'
-        l_f.describe_root_folder()
-        l_f.go_to_page(1)
+        l_f.go_to_root()
         return {'folder': l_f}
 
     def query_folder(self) -> dict:
@@ -69,9 +68,15 @@ class LogicalDOCHandler:
         l_f.type = 'folder'
         if self.request.GET.get('tile') is not None:
             l_f.is_tile = True
-        l_f.describe()
         l_f.go_to_page(int(self.request.GET.get('page')))
         return {'folder': l_f}
+
+    def fetch_thumb(self) -> str:
+        l_d = Image()
+        l_d.id = str(self.id)
+        l_d.type = self.request.GET.get('type')
+        l_d.fetch_thumb()
+        return l_d.thumb
 
     def query_document(self) -> dict:
         l_d = AbstractDocument.new(self.id, self.request.GET.get('type'), '', True)
@@ -97,6 +102,12 @@ class LogicalDOCFolderHandler(LogicalDOCHandler):
 
     def run(self) -> HttpResponse:
         return render(self.request, 'logicaldoc/browse.html', self.query_folder())
+
+
+class LogicalDOCThumbHandler(LogicalDOCHandler):
+
+    def run(self) -> HttpResponse:
+        return HttpResponse(self.fetch_thumb(), content_type='text/plain')
 
 
 class LogicalDOCCreateFolderHandler(LogicalDOCHandler):

@@ -89,6 +89,13 @@ class BrowserRouter(Router):
 
 class LogicalDOCRouter(Router):
 
+    def is_fetch_thumb(self) -> bool:
+        if not self.has_get_param('id'):
+            return False
+        if not self.has_get_param('thumb'):
+            return False
+        return True
+
     def is_folder_create(self) -> bool:
         if not self.has_post_param('id'):
             return False
@@ -145,6 +152,10 @@ class LogicalDOCRouter(Router):
             return False
         return True
 
+    def respond_thumb(self) -> HttpResponse:
+        h = LogicalDOCHandler.LogicalDOCThumbHandler()
+        return self.run_logicaldoc_handler(h, self.get_get_param('id'))
+
     def respond_folder_create(self) -> HttpResponse:
         h = LogicalDOCHandler.LogicalDOCCreateFolderHandler()
         return self.run_logicaldoc_handler(h, '')
@@ -170,6 +181,8 @@ class LogicalDOCRouter(Router):
         return self.run_logicaldoc_handler(h, self.get_get_param('id'))
 
     def run(self) -> HttpResponse:
+        if self.is_fetch_thumb():
+            return self.respond_thumb()
         if self.is_folder_create():
             return self.respond_folder_create()
         if self.is_document_create():

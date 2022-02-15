@@ -1,9 +1,22 @@
+{% load static %}
 <div class="row my-1">
     {% for i in folder.children %}
     <span class="col-4 text-center my-1 border-top border-bottom" style="overflow: hidden">
-        <a href=?id={{ i.id }}&type={{ i.type }}>
-            <img src="{{ i.thumb }}" alt="{{ i.name }}">
+        {% if 'folder' == i.type %}
+        <a href=?id={{ i.id }}&type={{ i.type }}&page=1>
+            <img src="{% static 'folder.png' %}" alt="{{ i.name }}">
         </a>
+        <span style="display: block">{{ i.name }}</span>
+        {% elif 'png' == i.type or 'jpg' == i.type %}
+        <a href=?id={{ i.id }}&type={{ i.type }}>
+            <img src="{% static 'image.png' %}" alt="{{ i.name }}" class="lazy" id="{{ i.id }}">
+        </a>
+        {% else %}
+        <a href=?id={{ i.id }}&type={{ i.type }}>
+            <img src="{% static 'other.png' %}" alt="{{ i.name }}">
+        </a>
+        <span style="display: block">{{ i.name }}</span>
+        {% endif %}
     </span>
     {% endfor %}
 </div>

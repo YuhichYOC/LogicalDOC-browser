@@ -90,6 +90,7 @@ class Folder(AbstractItem):
 
     def __init__(self):
         super().__init__()
+        self.f_children_info: list = []
         self.f_children: list = []
         self.f_page: int = 0
         self.f_pages: list = []
@@ -111,12 +112,12 @@ class Folder(AbstractItem):
 
     @property
     def max_page(self) -> int:
-        if 0 == len(self.f_children):
+        if 0 == len(self.f_children_info):
             return 1
         if self.is_tile:
-            return -(-len(self.f_children) // self.TILE_ITEMS_PER_PAGE)
+            return -(-len(self.f_children_info) // self.TILE_ITEMS_PER_PAGE)
         # Round up len(self.f_children) divided by "ITEMS_PER_PAGE" to get the maximum number of pages.
-        return -(-len(self.f_children) // self.ITEMS_PER_PAGE)
+        return -(-len(self.f_children_info) // self.ITEMS_PER_PAGE)
 
     @property
     def prev_page(self) -> int:
@@ -142,50 +143,51 @@ class Folder(AbstractItem):
         l_f.name = a_name
         return l_f
 
-    def describe_root_folder(self) -> None:
+    def go_to_root(self) -> None:
         l_fq = FolderQuery()
         l_fq.path = '/'
         self.id = str(l_fq.find_by_path()['id'])
-        self.describe()
-        return None
-
-    def describe(self) -> None:
-        self.f_children.clear()
-        l_fq = FolderQuery()
-        l_fq.id = self.id
-        self.name = l_fq.get_folder()['name']
-        for f in l_fq.list_children():
-            l_add = Folder.new(str(f['id']), 'folder', f['name'])
-            l_add.sequence = len(self.f_children) + 1
-            self.f_children.append(l_add)
-        for d in l_fq.list_document():
-            l_add = AbstractDocument.new(str(d['id']), d['type'], d['fileName'])
-            l_add.sequence = len(self.f_children) + 1
-            self.f_children.append(l_add)
-        self.f_page = 1
-        self.f_pages = Paginator().create_list(1, self.prev_page, self.next_page, self.max_page)
-        self.fill_ancestors(self.id)
+        self.go_to_page(0)
         return None
 
     def go_to_page(self, arg: int) -> None:
+        self.cache_children_info()
         self.f_page = arg
         self.f_page = 1 if 1 > self.f_page else self.f_page
         self.f_page = self.max_page if self.max_page < self.f_page else self.f_page
         self.f_pages = Paginator().create_list(self.f_page, self.prev_page, self.next_page, self.max_page)
         self.slice()
-        self.fetch_thumb()
+        self.fill_ancestors(self.id)
+        return None
+
+    def cache_children_info(self) -> None:
+        l_fq = FolderQuery()
+        l_fq.id = self.id
+        l_children = l_fq.list_children()
+        l_documents = l_fq.list_document()
+        for f in l_children:
+            self.f_children_info.append((f['id'], 'folder', f['name']))
+        for d in l_documents:
+            self.f_children_info.append((d['id'], d['type'], d['fileName']))
         return None
 
     def slice(self) -> None:
         l_start = self.TILE_ITEMS_PER_PAGE * (self.f_page - 1) if self.is_tile \
             else self.ITEMS_PER_PAGE * (self.f_page - 1)
         l_end = l_start + self.TILE_ITEMS_PER_PAGE if self.is_tile else l_start + self.ITEMS_PER_PAGE
-        l_end = len(self.f_children) if len(self.f_children) < l_end else l_end
-        l_display_items = []
+        l_end = len(self.f_children_info) if len(self.f_children_info) < l_end else l_end
         for i in range(l_start, l_end):
-            l_display_items.append(self.f_children[i])
-        self.f_children.clear()
-        self.f_children.extend(l_display_items)
+            l_id = self.f_children_info[i][0]
+            l_type = self.f_children_info[i][1]
+            l_name = self.f_children_info[i][2]
+            if l_type == 'folder':
+                l_add_folder = Folder.new(str(l_id), l_type, l_name)
+                l_add_folder.sequence = l_start + i + 1
+                self.f_children.append(l_add_folder)
+            else:
+                l_add_document = AbstractDocument.new(str(l_id), l_type, l_name)
+                l_add_document.sequence = l_start + i + 1
+                self.f_children.append(l_add_document)
         return None
 
     def fetch_thumb(self) -> None:

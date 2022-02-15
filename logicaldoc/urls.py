@@ -4,5 +4,5 @@ from . import views
 
 app_name = 'logicaldoc'
 urlpatterns = [
-    path('', views.browse),
+    path('', views.browse, name='index'),
 ]

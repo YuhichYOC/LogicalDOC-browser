@@ -1,3 +1,4 @@
+{% load static %}
 <div
 {% if i.is_even_row %}
     class="row align-items-center my-1 bg-secondary bg-opacity-10"
@@ -26,7 +27,7 @@
         <a class="flex-fill" href=?id={{ i.id }}&type={{ i.type }}>{{ i.name }}</a>
     </span>
     <span class="col-sm-12 col-lg-4 text-center" style="overflow: hidden">
-        <img src="{{ i.thumb }}" alt="{{ i.name }}">
+        <img src="{% static 'image.png' %}" alt="{{ i.name }}" class="lazy" id="{{ i.id }}">
     </span>
     <span class="col-sm-12 col-lg-2 text-center resize-font-l">
         {{ i.type }}

@@ -49,6 +49,34 @@ window.onload = () => {
             window.location.href = '?id={{ folder.id }}&type={{ folder.type }}&page={{ folder.page }}';
         }
     }
+    window.addEventListener('scroll', onScroll);
+}
+
+function onScroll() {
+    let y = window.scrollY;
+    let h = window.innerHeight;
+    let images = document.getElementsByClassName('lazy');
+    for (let i = 0; i < images.length; i++) {
+        let pos = images[i].getBoundingClientRect().top + y;
+        if (y > pos - h) {
+            onFocus(images[i]);
+        }
+    }
+}
+
+function onFocus(element) {
+    if (!element.hasAttribute('id')) {
+        return;
+    }
+    {% url 'logicaldoc:index' as thumb_url %}
+    let request = new XMLHttpRequest();
+    request.open('GET', {{ thumb_url }} + "?id=" + element.getAttribute('id') + "&thumb=yes");
+    request.responseType = 'text';
+    request.onload = function() {
+        element.src = request.responseText;
+    };
+    request.send();
+    element.removeAttribute('id');
 }
 </script>
 </body>
