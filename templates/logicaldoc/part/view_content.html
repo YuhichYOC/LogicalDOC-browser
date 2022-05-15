@@ -3,6 +3,7 @@
     <img src="{{ i.content }}" alt="{{ i.name }}">
 </div>
 {% elif 'pdf' == i.type %}
+{% load static %}
 <div class="row d-flex flex-fill justify-content-center my-1">
 <span class="my-1">
     <input type="button" class="resize-font-xxl" value="Previous" onclick="pageFeed(pageNumber - 1);">
@@ -11,35 +12,17 @@
     <canvas id="pdf-canvas" class="col-12" style="border: solid black 1px;"></canvas>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+<script src="{% static 'logicaldoc.js' %}" type="text/javascript"></script>
 <script type="text/javascript">
-    {% load static %}
     let p;
-    let pageNumber;
+    let pageNumber = 1;
     const url = "{% static i.content %}";
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
-    const loadingTask = pdfjsLib.getDocument(url);
-    loadingTask.promise.then(function (pdf) {
-        p = pdf;
-        pageNumber = {{ i.page }};
-        pageFeed(pageNumber);
-    });
+    const pdfCanvas = PdfCanvas(window, url);
+    pdfCanvas.load();
 
     function pageFeed(i) {
         pageNumber = 1 > i ? 1 : i;
-        pageNumber = p._pdfInfo.numPages < i ? p._pdfInfo.numPages : pageNumber;
-        p.getPage(pageNumber).then(function (page) {
-            const viewport = page.getViewport({scale: 1});
-            const canvas = document.getElementById('pdf-canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            const renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
-            page.render(renderContext);
-        });
+        pdfCanvas.feed(pageNumber);
     }
 </script>
 {% elif 'txt' == i.type %}

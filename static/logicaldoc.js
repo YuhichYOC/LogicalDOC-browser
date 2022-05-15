@@ -52,3 +52,43 @@ TileSwitch.prototype.changed = function (ev) {
         this.window.location.href = '?id=' + this.id + '&type=' + this.type + '&page=' + this.page;
     }
 }
+
+const PdfCanvas = function (w, url) {
+    if (!(this instanceof PdfCanvas)) {
+        return new PdfCanvas(w, url);
+    }
+
+    this.window = w;
+    this.url = url;
+    this.pdf = null;
+}
+
+PdfCanvas.prototype.load = function () {
+    const pdfjsLib = this.window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
+    const loadingTask = pdfjsLib.getDocument(this.url);
+    loadingTask.promise.then(this.loaded);
+}
+
+PdfCanvas.prototype.loaded = function (pdf) {
+    pdfCanvas.pdf = pdf;
+    pdfCanvas.feed(1);
+}
+
+PdfCanvas.prototype.feed = function (pageNumber) {
+    pageNumber = this.pdf._pdfInfo.numPages < pageNumber ? this.pdf._pdfInfo.numPages : pageNumber;
+    this.pdf.getPage(pageNumber).then(this.render);
+}
+
+PdfCanvas.prototype.render = function (page) {
+    const viewport = page.getViewport({scale: 1});
+    const canvas = this.window.document.getElementById('pdf-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+    const renderCtx = {
+        canvasContext: ctx,
+        viewport: viewport,
+    };
+    page.render(renderCtx);
+}
