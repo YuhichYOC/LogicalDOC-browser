@@ -182,11 +182,11 @@ class Folder(AbstractItem):
             l_name = self.f_children_info[i][2]
             if l_type == 'folder':
                 l_add_folder = Folder.new(str(l_id), l_type, l_name)
-                l_add_folder.sequence = l_start + i + 1
+                l_add_folder.sequence = i + 1
                 self.f_children.append(l_add_folder)
             else:
                 l_add_document = AbstractDocument.new(str(l_id), l_type, l_name)
-                l_add_document.sequence = l_start + i + 1
+                l_add_document.sequence = i + 1
                 self.f_children.append(l_add_document)
         return None
 
