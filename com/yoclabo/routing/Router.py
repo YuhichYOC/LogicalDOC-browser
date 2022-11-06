@@ -45,35 +45,37 @@ class Router:
         self.f_parameters = arg
 
     def has_get_param(self, name: str) -> bool:
-        if self.request.GET is None:
-            return False
         if self.request.GET.get(name) is None:
             return False
         if not self.request.GET.get(name):
             return False
         return True
 
-    def get_get_param(self, name: str) -> str:
-        return self.request.GET.get(name)
-
     def has_post_param(self, name: str) -> bool:
-        if self.request.POST is None:
-            return False
         if self.request.POST.get(name) is None:
             return False
         if not self.request.POST.get(name):
             return False
         return True
 
+    def is_folder_request(self) -> bool:
+        if self.has_post_param('type'):
+            return self.request.POST.get('type') == 'folder'
+        return self.request.GET.get('type') == 'folder'
+
+    def is_pdf_request(self) -> bool:
+        if self.has_post_param('type'):
+            return self.request.POST.get('type') == 'pdf'
+        return self.request.GET.get('type') == 'pdf'
+
     def run_browser_handler(self, handler: BrowserHandler) -> HttpResponse:
         handler.request = self.request
         handler.parameters = self.parameters
         return handler.run()
 
-    def run_logicaldoc_handler(self, handler: LogicalDOCHandler, node_id: str) -> HttpResponse:
+    def run_logicaldoc_handler(self, handler: LogicalDOCHandler) -> HttpResponse:
         handler.request = self.request
         handler.parameters = self.parameters
-        handler.id = node_id
         return handler.run()
 
 
@@ -128,9 +130,7 @@ class LogicalDOCRouter(Router):
             return False
         if not self.has_get_param('page'):
             return False
-        if self.get_get_param('type') != 'folder':
-            return False
-        return True
+        return self.is_folder_request()
 
     def is_document_page_feed(self) -> bool:
         if not self.has_get_param('id'):
@@ -139,46 +139,42 @@ class LogicalDOCRouter(Router):
             return False
         if not self.has_get_param('page'):
             return False
-        if self.get_get_param('type') != 'pdf':
-            return False
-        return True
+        return self.is_pdf_request()
 
     def is_document_get(self) -> bool:
         if not self.has_get_param('id'):
             return False
         if not self.has_get_param('type'):
             return False
-        if self.get_get_param('type') == 'folder':
-            return False
-        return True
+        return not self.is_folder_request()
 
     def respond_thumb(self) -> HttpResponse:
         h = LogicalDOCHandler.LogicalDOCThumbHandler()
-        return self.run_logicaldoc_handler(h, self.get_get_param('id'))
+        return self.run_logicaldoc_handler(h)
 
     def respond_folder_create(self) -> HttpResponse:
         h = LogicalDOCHandler.LogicalDOCCreateFolderHandler()
-        return self.run_logicaldoc_handler(h, '')
+        return self.run_logicaldoc_handler(h)
 
     def respond_document_create(self) -> HttpResponse:
         h = LogicalDOCHandler.LogicalDOCCreateDocumentHandler()
-        return self.run_logicaldoc_handler(h, '')
+        return self.run_logicaldoc_handler(h)
 
     def respond_root(self) -> HttpResponse:
         h = LogicalDOCHandler.LogicalDOCRootFolderHandler()
-        return self.run_logicaldoc_handler(h, '')
+        return self.run_logicaldoc_handler(h)
 
     def respond_folder(self) -> HttpResponse:
         h = LogicalDOCHandler.LogicalDOCFolderHandler()
-        return self.run_logicaldoc_handler(h, self.get_get_param('id'))
+        return self.run_logicaldoc_handler(h)
 
     def respond_document_page_feed(self) -> HttpResponse:
         h = LogicalDOCHandler.LogicalDOCDocumentPageFeedHandler()
-        return self.run_logicaldoc_handler(h, self.get_get_param('id'))
+        return self.run_logicaldoc_handler(h)
 
     def respond_document(self) -> HttpResponse:
         h = LogicalDOCHandler.LogicalDOCDocumentHandler()
-        return self.run_logicaldoc_handler(h, self.get_get_param('id'))
+        return self.run_logicaldoc_handler(h)
 
     def run(self) -> HttpResponse:
         if self.is_fetch_thumb():

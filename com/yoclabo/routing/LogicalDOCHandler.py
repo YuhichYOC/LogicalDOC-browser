@@ -29,7 +29,6 @@ class LogicalDOCHandler:
     def __init__(self):
         self.f_request = None
         self.f_parameters: list = []
-        self.f_id: str = ''
 
     @property
     def request(self):
@@ -39,10 +38,6 @@ class LogicalDOCHandler:
     def parameters(self) -> list:
         return self.f_parameters
 
-    @property
-    def id(self) -> str:
-        return self.f_id
-
     @request.setter
     def request(self, arg):
         self.f_request = arg
@@ -51,9 +46,24 @@ class LogicalDOCHandler:
     def parameters(self, arg: list):
         self.f_parameters = arg
 
-    @id.setter
-    def id(self, arg: str):
-        self.f_id = arg
+    def has_get_param(self, name: str) -> bool:
+        return self.request.GET.get(name) is not None
+
+    def has_post_param(self, name: str) -> bool:
+        return self.request.POST.get(name) is not None
+
+    def has_files_param(self, name: str) -> bool:
+        return self.request.FILES.get(name) is not None
+
+    def get_param(self, name: str) -> str:
+        if self.has_post_param(name):
+            return self.request.POST.get(name)
+        return self.request.GET.get(name)
+
+    def get_files(self, name: str):
+        if self.has_files_param(name):
+            return self.request.FILES.get(name)
+        return None
 
     @staticmethod
     def query_root_folder() -> dict:
@@ -64,28 +74,42 @@ class LogicalDOCHandler:
 
     def query_folder(self) -> dict:
         l_f = Folder()
-        l_f.id = self.id
+        l_f.id = self.get_param('id')
         l_f.type = 'folder'
-        if self.request.GET.get('tile') is not None:
+        if self.has_get_param('tile'):
             l_f.is_tile = True
-        l_f.go_to_page(int(self.request.GET.get('page')))
+        elif self.has_post_param('tile'):
+            l_f.is_tile = True
+        l_f.go_to_page(int(self.get_param('page')))
         return {'folder': l_f}
 
     def fetch_thumb(self) -> str:
         l_d = Image()
-        l_d.id = str(self.id)
-        l_d.type = self.request.GET.get('type')
+        l_d.id = str(self.get_param('id'))
+        l_d.type = self.get_param('type')
         l_d.fetch_thumb()
         return l_d.thumb
 
+    def folder_create(self) -> dict:
+        l_q = Query.FolderQuery()
+        l_q.id = self.get_param('id')
+        l_q.create_folder(self.get_param('folderName'))
+        return self.query_folder()
+
+    def document_create(self) -> dict:
+        l_q = Query.FolderQuery()
+        l_q.id = self.get_param('id')
+        l_q.create_document('jp', self.get_files('file').name, self.get_files('file'))
+        return self.query_folder()
+
     def query_document(self) -> dict:
-        l_d = AbstractDocument.new(self.id, self.request.GET.get('type'), '', True)
+        l_d = AbstractDocument.new(self.get_param('id'), self.get_param('type'), '', True)
         return {'document': l_d}
 
     def query_document_page_feed(self) -> dict:
         l_d = Pdf()
-        l_d.id = self.id
-        l_d.go_to_page(int(self.request.GET.get('page')))
+        l_d.id = self.get_param('id')
+        l_d.go_to_page(int(self.get_param('page')))
         return {'document': l_d}
 
     def run(self):
@@ -113,21 +137,13 @@ class LogicalDOCThumbHandler(LogicalDOCHandler):
 class LogicalDOCCreateFolderHandler(LogicalDOCHandler):
 
     def run(self) -> HttpResponse:
-        self.id = self.request.POST['id']
-        l_q = Query.FolderQuery()
-        l_q.id = self.id
-        l_q.create_folder(self.request.POST['folderName'])
-        return render(self.request, 'logicaldoc/browse.html', self.query_folder())
+        return render(self.request, 'logicaldoc/browse.html', self.folder_create())
 
 
 class LogicalDOCCreateDocumentHandler(LogicalDOCHandler):
 
     def run(self) -> HttpResponse:
-        self.id = self.request.POST['id']
-        l_q = Query.FolderQuery()
-        l_q.id = self.id
-        l_q.create_document('jp', self.request.FILES['file'].name, self.request.FILES['file'])
-        return render(self.request, 'logicaldoc/browse.html', self.query_folder())
+        return render(self.request, 'logicaldoc/browse.html', self.document_create())
 
 
 class LogicalDOCDocumentHandler(LogicalDOCHandler):

@@ -1,4 +1,8 @@
-<form method="post" action="/logicaldoc/" enctype="multipart/form-data">
+{% if i.is_tile %}
+<form method="post" action="/logicaldoc/?page={{ i.page }}&tile=true" enctype="multipart/form-data">
+{% else %}
+<form method="post" action="/logicaldoc/?page={{ i.page }}" enctype="multipart/form-data">
+{% endif %}
     {% csrf_token %}
     <div class="row align-items-center g-3 m-3">
         <div class="col-auto">
