@@ -1,0 +1,15 @@
+{% load static %}
+<span class="col-sm-12 col-lg-2 text-center resize-font-l">
+    {{ i.sequence }}
+</span>
+<span class="col-sm-12 col-lg-4 text-center d-flex resize-font-xxl">
+    <a class="flex-fill" href=?id={{ i.id }}&type={{ i.type }}>
+        {{ i.name }}
+    </a>
+</span>
+<span class="d-none d-lg-block col-lg-4 text-center">
+    &nbsp;
+</span>
+<span class="col-sm-12 col-lg-2 text-center resize-font-l">
+    {{ i.type }}
+</span>

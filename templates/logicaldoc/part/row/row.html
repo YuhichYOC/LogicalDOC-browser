@@ -1,0 +1,21 @@
+{% if i.is_even_row %}
+<div class="row align-items-center my-1 bg-secondary bg-opacity-10" style="min-height: 44px;">
+{% if 'folder' == i.type %}
+    {% include 'logicaldoc/part/row/folder.html' with i=i %}
+{% elif 'png' == i.type or 'jpg' == i.type %}
+    {% include 'logicaldoc/part/row/image.html' with i=i %}
+{% else %}
+    {% include 'logicaldoc/part/row/other.html' with i=i %}
+{% endif %}
+</div>
+{% else %}
+<div class="row align-items-center my-1 border-top border-bottom" style="min-height: 44px;">
+{% if 'folder' == i.type %}
+    {% include 'logicaldoc/part/row/folder.html' with i=i %}
+{% elif 'png' == i.type or 'jpg' == i.type %}
+    {% include 'logicaldoc/part/row/image.html' with i=i %}
+{% else %}
+    {% include 'logicaldoc/part/row/other.html' with i=i %}
+{% endif %}
+</div>
+{% endif %}

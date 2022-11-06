@@ -1,0 +1,5 @@
+{% load static %}
+<a href=?id={{ i.id }}&type={{ i.type }}>
+    <img src="{% static 'other.png' %}" alt="{{ i.name }}">
+</a>
+<span style="display: block">{{ i.name }}</span>

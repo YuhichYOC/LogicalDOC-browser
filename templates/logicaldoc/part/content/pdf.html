@@ -1,8 +1,3 @@
-{% if 'png' == i.type or 'jpg' == i.type %}
-<div class="row d-flex flex-fill justify-content-center my-1">
-    <img src="{{ i.content }}" alt="{{ i.name }}">
-</div>
-{% elif 'pdf' == i.type %}
 {% load static %}
 <div class="row d-flex flex-fill justify-content-center my-1">
 <span class="my-1">
@@ -25,17 +20,3 @@
         pdfCanvas.feed(pageNumber);
     }
 </script>
-{% elif 'txt' == i.type %}
-<div class="row d-flex flex-fill justify-content-center my-1">
-    <label for="{{ i.id }}">{{ i.name }}</label>
-    <textarea id="{{ i.id }}" rows="28">{{ i.content }}</textarea>
-</div>
-{% elif 'mp4' == i.type or 'm4a' == i.type or 'mp3' == i.type %}
-<div class="row d-flex flex-fill justify-content-center my-1">
-    <video controls style="width: 100%">
-        {% load static %}
-        <source src={% static i.content %}>
-    </video>
-</div>
-{% else %}
-{% endif %}

@@ -1,0 +1,13 @@
+<div class="row my-1">
+    {% for i in folder.children %}
+    <span class="col-4 text-center my-1 border-top border-bottom" style="overflow: hidden">
+    {% if 'folder' == i.type %}
+        {% include 'logicaldoc/part/tile/folder.html' with i=i %}
+    {% elif 'png' == i.type or 'jpg' == i.type %}
+        {% include 'logicaldoc/part/tile/image.html' with i=i %}
+    {% else %}
+        {% include 'logicaldoc/part/tile/other.html' with i=i %}
+    {% endif %}
+    </span>
+    {% endfor %}
+</div>

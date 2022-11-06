@@ -1,0 +1,10 @@
+{% if 'png' == i.type or 'jpg' == i.type %}
+    {% include 'logicaldoc/part/content/image.html' with i=i %}
+{% elif 'pdf' == i.type %}
+    {% include 'logicaldoc/part/content/pdf.html' with i=i %}
+{% elif 'txt' == i.type %}
+    {% include 'logicaldoc/part/content/text.html' with i=i %}
+{% elif 'mp4' == i.type or 'm4a' == i.type or 'mp3' == i.type %}
+    {% include 'logicaldoc/part/content/movie.html' with i=i %}
+{% else %}
+{% endif %}

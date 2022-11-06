@@ -1,0 +1,4 @@
+{% load static %}
+<a target="_blank" href=?id={{ i.id }}&type={{ i.type }}>
+    <img src="{% static 'image.png' %}" alt="{{ i.name }}" class="lazy" id="{{ i.id }}">
+</a>

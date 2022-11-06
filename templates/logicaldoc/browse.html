@@ -20,11 +20,9 @@
         <label class="form-check-label" for="showTile">Tile View</label>
     </div>
     {% if folder.is_tile %}
-    {% include 'logicaldoc/part/tile_folder_view.html' with folder=folder %}
+        {% include 'logicaldoc/part/tile/browse.html' with folder=folder %}
     {% else %}
-    {% for i in folder.children %}
-    {% include 'logicaldoc/part/folder_row.html' with i=i %}
-    {% endfor %}
+        {% include 'logicaldoc/part/row/browse.html' with folder=folder %}
     {% endif %}
     <div class="row my-1">
         {% include 'logicaldoc/part/pagination.html' with i=folder %}

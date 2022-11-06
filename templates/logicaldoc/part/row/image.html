@@ -1,0 +1,15 @@
+{% load static %}
+<span class="col-sm-12 col-lg-2 text-center resize-font-l">
+    {{ i.sequence }}
+</span>
+<span class="col-sm-12 col-lg-4 text-center d-flex resize-font-xxl">
+    <a target="_blank" class="flex-fill" href=?id={{ i.id }}&type={{ i.type }}>
+        {{ i.name }}
+    </a>
+</span>
+<span class="col-sm-12 col-lg-4 text-center" style="overflow: hidden">
+    <img src="{% static 'image.png' %}" alt="{{ i.name }}" class="lazy" id="{{ i.id }}">
+</span>
+<span class="col-sm-12 col-lg-2 text-center resize-font-l">
+    {{ i.type }}
+</span>
