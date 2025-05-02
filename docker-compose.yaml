@@ -1,0 +1,13 @@
+services:
+    logicaldoc-browser:
+        build:
+            context: ./
+            dockerfile: Dockerfile
+        init: true
+        restart: unless-stopped
+        ports:
+            - "81:80"
+            - "444:443"
+        volumes:
+            - ./:/opt/logicaldoc/browser
+        command: supervisord -c /etc/supervisor/conf.d/supervisord.conf

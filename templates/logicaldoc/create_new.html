@@ -1,0 +1,71 @@
+<input type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#create-new-modal" value="Create new">
+<div class="modal fade" id="create-new-modal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New</h5>
+                <input type="button" class="btn-close" data-bs-dismiss="modal">
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="#" data-bs-toggle="tab" data-bs-target="#tp1">Create directory</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#tp2">Create textfile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#tp3">Upload file</a>
+                    </li>
+                </ul>
+                <div class="tab-content p-3">
+                    <div class="tab-pane active" id="tp1">
+{% if directory.is_tile %}
+                        <form method="post" action="?id={{ directory.id }}&type={{ directory.type }}&name={{ directory.name }}&page={{ directory.page }}&tile=true">
+{% else %}
+                        <form method="post" action="?id={{ directory.id }}&type={{ directory.type }}&name={{ directory.name }}&page={{ directory.page }}">
+{% endif %}
+                            {% csrf_token %}
+                            <div class="input-group pt-1">
+                                <span class="input-group-text" id="tp1d">Directory name</span>
+                                <input type="text" class="form-control" aria-describedby="tp1d" name="directoryName">
+                                <input type="submit" class="btn btn-primary">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="tab-pane" id="tp2">
+{% if directory.is_tile %}
+                        <form method="post" action="?id={{ directory.id }}&type={{ directory.type }}&name={{ directory.name }}&page={{ directory.page }}&tile=true">
+{% else %}
+                        <form method="post" action="?id={{ directory.id }}&type={{ directory.type }}&name={{ directory.name }}&page={{ directory.page }}">
+{% endif %}
+                            {% csrf_token %}
+                            <div class="input-group pt-1">
+                                <span class="input-group-text" id="tp2d">File name</span>
+                                <input type="text" class="form-control" aria-describedby="tp2d" name="textFileName">
+                                <input type="submit" class="btn btn-primary">
+                            </div>
+                            <div class="input-group pt-1">
+                                <span class="input-group-text" id="tp2dc">Content</span>
+                                <input type="textarea" class="form-control" name="content">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="tab-pane" id="tp3">
+{% if directory.is_tile %}
+                        <form method="post" action="?id={{ directory.id }}&type={{ directory.type }}&name={{ directory.name }}&page={{ directory.page }}&tile=true" enctype="multipart/form-data">
+{% else %}
+                        <form method="post" action="?id={{ directory.id }}&type={{ directory.type }}&name={{ directory.name }}&page={{ directory.page }}" enctype="multipart/form-data">
+{% endif %}
+                            {% csrf_token %}
+                            <div class="input-group pt-1">
+                                <input type="file" class="form-control" name="uploadFile">
+                                <input type="submit" class="btn btn-primary">
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

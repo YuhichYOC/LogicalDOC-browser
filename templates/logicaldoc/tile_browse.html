@@ -1,0 +1,30 @@
+{% load static %}
+<div class="row my-1">
+{% for child in directory.children %}
+    <span class="col-4 text-center my-1 border-top border-bottom overflow-hidden">
+    {% if child.type == 'directory' and directory.is_tile %}
+        <a href="?id={{ child.id }}&type={{ child.type }}&name={{ child.name }}&page=1&tile=true">
+            <img src="{% static 'folder.png' %}" alt="{{ child.name }}" style="max-height: 180px;">
+        </a>
+        <span style="display: block;">{{ child.name }}</span>
+    {% elif child.type == 'directory' %}
+        <a href="?id={{ child.id }}&type={{ child.type }}&name={{ child.name }}&page=1">
+            <img src="{% static 'folder.png' %}" alt="{{ child.name }}" style="max-height: 180px;">
+        </a>
+        <span style="display: block;">{{ child.name }}</span>
+    {% elif child.type == 'image' %}
+        <span class="d-flex align-items-center justify-content-center">
+            <a href="?id={{ child.id }}&type={{ child.type }}&name={{ child.name }}&content=bytes" data-lightbox="image" data-title="image">
+                <img src="{% static 'image.png' %}" alt="{{ child.name }}" class="lazy"
+                    style="max-height: 180px; object-fit: contain;" id="{{ child.id }}">
+            </a>
+        </span>
+    {% else %}
+        <a target="_blank" href="?id={{ child.id }}&type={{ child.type }}&name={{ child.name }}">
+            <img src="{% static 'other.png' %}" alt="{{ child.name }}" style="max-height: 180px;">
+        </a>
+        <span style="display: block;">{{ child.name }}</span>
+    {% endif %}
+    </span>
+{% endfor %}
+</div>

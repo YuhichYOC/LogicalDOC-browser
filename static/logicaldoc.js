@@ -25,11 +25,9 @@ DelayedImageLoader.prototype.focus = function (e) {
     }
 
     let request = new XMLHttpRequest();
-    request.open('GET', this.thumb_url + "?id=" + e.getAttribute('id') + "&thumb=yes");
+    request.open('GET', this.thumb_url + "?id=" + e.getAttribute('id') + "&content=encoded");
     request.responseType = 'text';
-    request.onload = function () {
-        e.src = request.responseText;
-    }
+    request.onload = () => e.src = request.responseText;
     request.send();
     e.removeAttribute('id');
 }
@@ -53,42 +51,37 @@ TileSwitch.prototype.changed = function (ev) {
     }
 }
 
-const PdfCanvas = function (w, url) {
-    if (!(this instanceof PdfCanvas)) {
-        return new PdfCanvas(w, url);
+const SlideShow = function (w, i) {
+    if (!(this instanceof SlideShow)) {
+        return new SlideShow(w, i);
     }
 
     this.window = w;
-    this.url = url;
-    this.pdf = null;
+    this.interval = undefined;
+    this.interval_ms = i;
 }
 
-PdfCanvas.prototype.load = function () {
-    const pdfjsLib = this.window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js';
-    const loadingTask = pdfjsLib.getDocument(this.url);
-    loadingTask.promise.then(this.loaded);
+SlideShow.prototype.start = function () {
+    const targets = Array.from(this.window.document.querySelectorAll('[data-lightbox]')).map(image => image.getAttribute('href'));
+    if (targets.length === 0) {
+        return;
+    }
+    let index = 0;
+    this.interval = setInterval(() => {
+        this.load(targets[index]);
+        index = (index + 1) % targets.length;
+    }, this.interval_ms);
 }
 
-PdfCanvas.prototype.loaded = function (pdf) {
-    pdfCanvas.pdf = pdf;
-    pdfCanvas.feed(1);
-}
+SlideShow.prototype.load = (target) => fetch(target)
+    .then(res => res.arrayBuffer())
+    .then(bytes => {
+        const url = URL.createObjectURL(new Blob([new Uint8Array(bytes)], {type: 'image/png'}));
+        const i = this.window.document.getElementById('slide-show-image');
+        i.onload = () => URL.revokeObjectURL(url);
+        i.src = url;
+    });
 
-PdfCanvas.prototype.feed = function (pageNumber) {
-    pageNumber = this.pdf._pdfInfo.numPages < pageNumber ? this.pdf._pdfInfo.numPages : pageNumber;
-    this.pdf.getPage(pageNumber).then(this.render);
-}
-
-PdfCanvas.prototype.render = function (page) {
-    const viewport = page.getViewport({scale: 1});
-    const canvas = this.window.document.getElementById('pdf-canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-    const renderCtx = {
-        canvasContext: ctx,
-        viewport: viewport,
-    };
-    page.render(renderCtx);
+SlideShow.prototype.stop = function () {
+    clearInterval(this.interval);
 }

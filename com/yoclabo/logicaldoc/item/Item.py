@@ -17,23 +17,28 @@
 # limitations under the License.
 #
 
-import base64
-import os
+import environ
+from django.utils.text import get_valid_filename
 
-import PyPDF4
+from com.yoclabo.logicaldoc.query.Query import (
+    ITEM_TYPE_DIRECTORY, ITEM_TYPE_TEXT, ITEM_TYPE_IMAGE, ITEM_TYPE_PDF, ITEM_TYPE_MEDIA,
+    query_ancestors, query_children, create_directory, create_file, get_text_content,
+    update_text_content, get_web_encoded_image, get_image_bytearray, copy_file_to_static
+)
 
-from browser.settings import BASE_DIR
-from com.yoclabo.logicaldoc.query.Query import DocumentQuery, FolderQuery
+env = environ.Env()
+env.read_env('.env')
 
 
-class AbstractItem:
+class Item:
 
-    def __init__(self):
-        self.f_id: str = ''
-        self.f_type: str = ''
-        self.f_name: str = ''
+    def __init__(self, id: str, type: str, name: str, sequence: int) -> None:
+        self.f_id: str = id
+        self.f_type: str = type
+        self.f_name: str = name
+        self.f_sequence: int = sequence
         self.f_ancestors: list = []
-        self.f_sequence: int = 0
+        return
 
     @property
     def id(self) -> str:
@@ -48,67 +53,50 @@ class AbstractItem:
         return self.f_name
 
     @property
-    def ancestors(self) -> list:
-        return self.f_ancestors
-
-    @property
     def sequence(self) -> int:
         return self.f_sequence
 
     @property
-    def is_even_row(self) -> bool:
-        return 0 == self.f_sequence % 2
+    def ancestors(self) -> list:
+        return self.f_ancestors
 
-    @id.setter
-    def id(self, arg: str):
-        self.f_id = arg
+    @property
+    def row_display_attributes(self) -> str:
+        if self.f_sequence % 2 == 0:
+            return 'bg-secondary bg-opacity-10'
+        return 'border-top border-bottom'
 
-    @type.setter
-    def type(self, arg: str):
-        self.f_type = arg
-
-    @name.setter
-    def name(self, arg: str):
-        self.f_name = arg
-
-    @sequence.setter
-    def sequence(self, arg: int):
-        self.f_sequence = arg
-
-    def fill_ancestors(self, folder_id: str) -> None:
-        self.f_ancestors.clear()
-        l_fq = FolderQuery()
-        l_fq.id = folder_id
-        for a in l_fq.get_path():
-            self.f_ancestors.append(Folder.new(str(a['id']), 'folder', a['name']))
-        if 'folder' == self.f_type:
-            del self.f_ancestors[-1]
-        return None
+    def fill_ancestors(self) -> None:
+        for a in query_ancestors(self.f_id, self.f_type):
+            self.f_ancestors.append(Item(a['id'], a['type'], a['name'], 0))
+        return
 
 
-class Folder(AbstractItem):
+class Directory(Item):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, id: str, name: str, sequence: int) -> None:
+        super().__init__(id, ITEM_TYPE_DIRECTORY, name, sequence)
         self.f_children_info: list = []
         self.f_children: list = []
         self.f_page: int = 0
         self.f_pages: list = []
         self.f_is_tile: bool = False
-        self.ITEMS_PER_PAGE: int = 10
-        self.TILE_ITEMS_PER_PAGE: int = 30
+        self.SLIDE_SHOW_INTERVAL_MS: int = env.int('SLIDE_SHOW_INTERVAL_MS', default=3000)
+        self.ITEMS_PER_PAGE: int = env.int('ITEMS_PER_PAGE', default=10)
+        self.TILE_ITEMS_PER_PAGE: int = env.int('TILE_ITEMS_PER_PAGE', default=30)
+        return
 
     @property
     def children(self) -> list:
         return self.f_children
 
     @property
-    def pages(self) -> list:
-        return self.f_pages
-
-    @property
     def page(self) -> int:
         return self.f_page
+
+    @property
+    def pages(self) -> list:
+        return self.f_pages
 
     @property
     def max_page(self) -> int:
@@ -131,45 +119,26 @@ class Folder(AbstractItem):
     def is_tile(self) -> bool:
         return self.f_is_tile
 
-    @is_tile.setter
-    def is_tile(self, arg: bool):
-        self.f_is_tile = arg
-
-    @staticmethod
-    def new(a_id: str, a_type: str, a_name: str):
-        l_f = Folder()
-        l_f.id = a_id
-        l_f.type = a_type
-        l_f.name = a_name
-        return l_f
-
-    def go_to_root(self) -> None:
-        l_fq = FolderQuery()
-        l_fq.path = '/'
-        self.id = str(l_fq.find_by_path()['id'])
-        self.go_to_page(0)
-        return None
-
-    def go_to_page(self, arg: int) -> None:
-        self.cache_children_info()
-        self.f_page = arg
-        self.f_page = 1 if 1 > self.f_page else self.f_page
-        self.f_page = self.max_page if self.max_page < self.f_page else self.f_page
-        self.f_pages = Paginator().create_list(self.f_page, self.prev_page, self.next_page, self.max_page)
-        self.slice()
-        self.fill_ancestors(self.id)
-        return None
+    @property
+    def slide_show_interval_ms(self) -> int:
+        return self.SLIDE_SHOW_INTERVAL_MS
 
     def cache_children_info(self) -> None:
-        l_fq = FolderQuery()
-        l_fq.id = self.id
-        l_children = l_fq.list_children()
-        l_documents = l_fq.list_document()
-        for f in l_children:
-            self.f_children_info.append((f['id'], 'folder', f['name']))
-        for d in l_documents:
-            self.f_children_info.append((d['id'], d['type'], d['fileName']))
-        return None
+        l_children: list = query_children(self.f_id)
+        i: int = 1
+        for child in l_children:
+            if child['type'] == ITEM_TYPE_DIRECTORY:
+                self.f_children_info.append(Directory(child['id'], child['name'], i))
+            elif child['type'] == ITEM_TYPE_IMAGE:
+                self.f_children_info.append(Image(child['id'], child['name'], i))
+            elif child['type'] == ITEM_TYPE_PDF:
+                self.f_children_info.append(Pdf(child['id'], child['name'], i))
+            elif child['type'] == ITEM_TYPE_MEDIA:
+                self.f_children_info.append(Media(child['id'], child['name'], i))
+            else:
+                self.f_children_info.append(Item(child['id'], child['type'], child['name'], i))
+            i += 1
+        return
 
     def slice(self) -> None:
         l_start = self.TILE_ITEMS_PER_PAGE * (self.f_page - 1) if self.is_tile \
@@ -177,183 +146,117 @@ class Folder(AbstractItem):
         l_end = l_start + self.TILE_ITEMS_PER_PAGE if self.is_tile else l_start + self.ITEMS_PER_PAGE
         l_end = len(self.f_children_info) if len(self.f_children_info) < l_end else l_end
         for i in range(l_start, l_end):
-            l_id = self.f_children_info[i][0]
-            l_type = self.f_children_info[i][1]
-            l_name = self.f_children_info[i][2]
-            if l_type == 'folder':
-                l_add_folder = Folder.new(str(l_id), l_type, l_name)
-                l_add_folder.sequence = i + 1
-                self.f_children.append(l_add_folder)
-            else:
-                l_add_document = AbstractDocument.new(str(l_id), l_type, l_name)
-                l_add_document.sequence = i + 1
-                self.f_children.append(l_add_document)
-        return None
+            self.f_children.append(self.f_children_info[i])
+        return
 
-    def fetch_thumb(self) -> None:
-        for c in self.f_children:
-            if 'png' == c.type or 'jpg' == c.type:
-                c.fetch_thumb()
-        return None
+    def prepare_browse(self, page: int, is_tile: bool) -> None:
+        self.fill_ancestors()
+        self.f_page = page
+        self.f_is_tile = is_tile
+        self.cache_children_info()
+        self.f_pages = Paginator().create_list(page, self.prev_page, self.next_page, self.max_page)
+        self.slice()
+        return
+
+    def create_directory(self, name: str) -> None:
+        if not name:
+            return
+        create_directory(self.f_id, name)
+        return
+
+    def create_text_file(self, name: str, content: str) -> None:
+        if not name:
+            return
+        create_file(self.f_id, name, content)
+        return
+
+    def save_file(self, files: dict) -> None:
+        create_file(self.f_id, get_valid_filename(files['uploadFile'].name), files['uploadFile'])
+        return
 
 
-class AbstractDocument(AbstractItem):
+class Text(Item):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, id: str, name: str, sequence: int) -> None:
+        super().__init__(id, ITEM_TYPE_TEXT, name, sequence)
         self.f_content: str = ''
+        return
 
     @property
     def content(self) -> str:
         return self.f_content
 
-    @staticmethod
-    def new(a_id: str, a_type: str, a_name: str, a_describe: bool = False):
-        if 'png' == a_type or 'jpg' == a_type:
-            l_d = Image()
-        elif 'pdf' == a_type:
-            l_d = Pdf()
-        elif 'txt' == a_type:
-            l_d = Text()
-        elif 'mp4' == a_type or 'm4a' == a_type or 'mp3' == a_type:
-            l_d = Media()
-        else:
-            l_d = AbstractDocument()
-        l_d.id = a_id
-        l_d.type = a_type
-        l_d.name = a_name
-        if a_describe:
-            l_d.describe()
-        return l_d
+    def get_text_content(self) -> None:
+        self.f_content = get_text_content(self.f_id)
+        return
 
-    def describe(self) -> DocumentQuery:
-        l_dq = DocumentQuery()
-        l_dq.id = self.id
-        l_d = l_dq.get_document()
-        self.type = l_d['type']
-        self.name = l_d['fileName']
-        self.fill_ancestors(str(l_d['folderId']))
-        self.f_content = l_d['fileName']
-        return l_dq
+    def update_text_content(self, new_content: str) -> None:
+        update_text_content(self.f_id, self.f_name, new_content)
+        return
 
-    def download_content(self) -> None:
-        l_dq = DocumentQuery()
-        l_dq.id = self.id
-        l_d = l_dq.get_document()
-        l_p = os.path.join(BASE_DIR, 'static', l_d['fileName'])
-        if os.path.exists(l_p):
-            os.remove(l_p)
-        l_f = open(l_p, 'wb')
-        l_f.write(l_dq.get_content())
-        l_f.close()
-        return None
+    def prepare_view(self) -> None:
+        self.fill_ancestors()
+        self.get_text_content()
+        return
 
 
-class Image(AbstractDocument):
+class Image(Item):
 
-    def __init__(self):
-        super().__init__()
-        self.f_thumb: str = ''
+    def __init__(self, id: str, name: str, sequence: int) -> None:
+        super().__init__(id, ITEM_TYPE_IMAGE, name, sequence)
+        self.f_image: str = ''
+        return
 
     @property
-    def thumb(self) -> str:
-        return self.f_thumb
+    def image(self) -> str:
+        return self.f_image
 
-    def describe(self) -> None:
-        l_dq = super().describe()
-        self.f_content = 'data:image/jpeg;base64,' + base64.b64encode(l_dq.get_content()).decode()
-        return None
+    def get_web_encoded_image(self) -> str:
+        return get_web_encoded_image(self.f_id)
 
-    def fetch_thumb(self) -> None:
-        l_dq = DocumentQuery()
-        l_dq.id = self.id
-        self.f_thumb = 'data:image/jpeg;base64,' + base64.b64encode(l_dq.get_thumb()).decode()
-        return None
+    def get_image_bytearray(self) -> bytes:
+        return get_image_bytearray(self.f_id)
 
-    def create_thumb(self) -> None:
-        l_dq = DocumentQuery()
-        l_dq.id = self.id
-        l_dq.create_thumb()
-        return None
+    def prepare_view(self) -> None:
+        self.fill_ancestors()
+        self.f_image = self.get_web_encoded_image()
+        return
 
 
-class Pdf(AbstractDocument):
+class Pdf(Item):
 
-    def __init__(self):
-        super().__init__()
-        self.f_page: int = 0
-        self.f_pages: list = []
+    def __init__(self, id: str, name: str, sequence: int) -> None:
+        super().__init__(id, ITEM_TYPE_PDF, name, sequence)
+        return
 
-    @property
-    def page(self) -> int:
-        return self.f_page
-
-    @property
-    def pages(self) -> list:
-        return self.f_pages
-
-    def describe(self) -> None:
-        l_dq = super().describe()
-        l_d = l_dq.get_document()
-        self.download_content()
-        l_p = os.path.join(BASE_DIR, 'static', l_d['fileName'])
-        self.f_page = 1
-        self.f_pages = Paginator().create_list(1, 1, 2, self.fetch_pdf_page_count(l_p))
-        self.f_content = l_d['fileName']
-        return None
-
-    @staticmethod
-    def fetch_pdf_page_count(arg: str) -> int:
-        l_f = open(arg, 'rb')
-        l_page_count: int = PyPDF4.PdfFileReader(l_f).getNumPages()
-        l_f.close()
-        return l_page_count
-
-    def go_to_page(self, arg: int) -> None:
-        l_dq = DocumentQuery()
-        l_dq.id = self.id
-        l_d = l_dq.get_document()
-        self.type = l_d['type']
-        self.name = l_d['fileName']
-        self.fill_ancestors(str(l_d['folderId']))
-        l_p = os.path.join(BASE_DIR, 'static', l_d['fileName'])
-        l_max_page = self.fetch_pdf_page_count(l_p)
-        arg = 1 if 1 > arg else arg
-        arg = l_max_page if l_max_page < arg else arg
-        l_prev_page = arg - 1 if 1 < arg else 1
-        l_next_page = arg + 1 if l_max_page > arg else l_max_page
-        self.f_page = arg
-        self.f_pages = Paginator().create_list(arg, l_prev_page, l_next_page, l_max_page)
-        self.f_content = l_d['fileName']
-        return None
+    def prepare_view(self) -> None:
+        self.fill_ancestors()
+        copy_file_to_static(self.f_id, self.f_name)
+        return
 
 
-class Text(AbstractDocument):
+class Media(Item):
 
-    def describe(self) -> None:
-        l_dq = super().describe()
-        self.f_content = l_dq.get_content().decode()
-        return None
+    def __init__(self, id: str, name: str, sequence: int) -> None:
+        super().__init__(id, ITEM_TYPE_MEDIA, name, sequence)
+        return
 
-
-class Media(AbstractDocument):
-
-    def describe(self) -> None:
-        l_dq = super().describe()
-        self.download_content()
-        self.f_content = l_dq.get_document()['fileName']
-        return None
+    def prepare_view(self) -> None:
+        self.fill_ancestors()
+        copy_file_to_static(self.f_id, self.f_name)
+        return
 
 
 class Paginator:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.f_page: int = 0
         self.f_text: str = ''
         self.f_is_current: bool = False
         self.CAPTION_PREV: str = 'Previous'
         self.CAPTION_NEXT: str = 'Next'
         self.CAPTION_DOT: str = '...'
+        return
 
     @property
     def page(self) -> int:
@@ -368,16 +271,19 @@ class Paginator:
         return self.f_is_current
 
     @page.setter
-    def page(self, arg: int):
+    def page(self, arg: int) -> None:
         self.f_page = arg
+        return
 
     @text.setter
-    def text(self, arg: str):
+    def text(self, arg: str) -> None:
         self.f_text = arg
+        return
 
     @is_current.setter
-    def is_current(self, arg: bool):
+    def is_current(self, arg: bool) -> None:
         self.f_is_current = arg
+        return
 
     def create_list(self, current_page: int, prev_page: int, next_page: int, max_page: int) -> list:
         l_pages: list = []

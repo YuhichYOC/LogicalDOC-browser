@@ -1,0 +1,13 @@
+<div class="row my-1">
+    <nav style="--bs-breadcrumb-divider: '>';" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+{% for a in directory.ancestors %}
+    {% if directory.is_tile %}
+            <li class="breadcrumb-item"><a href="?id={{ a.id }}&type={{ a.type }}&name={{ a.name }}&tile=true">{{ a.name }}</a></li>
+    {% else %}
+            <li class="breadcrumb-item"><a href="?id={{ a.id }}&type={{ a.type }}&name={{ a.name }}">{{ a.name }}</a></li>
+    {% endif %}
+{% endfor %}
+        </ol>
+    </nav>
+</div>

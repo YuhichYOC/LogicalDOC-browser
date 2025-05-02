@@ -5,4 +5,5 @@ from . import views
 app_name = 'logicaldoc'
 urlpatterns = [
     path('', views.browse, name='index'),
+    path('download', views.download, name='download'),
 ]

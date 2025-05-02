@@ -1,0 +1,36 @@
+{% load static %}
+{% for child in directory.children %}
+<div class="row align-items-center my-1 {{ child.row_display_attributes }}">
+    <span class="col-sm-12 col-lg-2 text-center resize-font-l">{{ child.sequence }}</span>
+    <span class="col-sm-12 col-lg-2 text-center resize-font-l">
+    {% if child.type == 'directory' and directory.is_tile %}
+        <a class="flex-fill" href="?id={{ child.id }}&type={{ child.type }}&name={{ child.name }}&page=1&tile=true">{{ child.name }}</a>
+    {% elif child.type == 'directory' %}
+        <a class="flex-fill" href="?id={{ child.id }}&type={{ child.type }}&name={{ child.name }}&page=1">{{ child.name }}</a>
+    {% else %}
+        <a target="_blank" class="flex-fill" href="?id={{ child.id }}&type={{ child.type }}&name={{ child.name }}">{{ child.name }}</a>
+    {% endif %}
+    </span>
+    {% if child.type == 'directory' %}
+    <span class="col-sm-12 col-lg-4 text-center overflow-hidden">
+        <img src="{% static 'folder.png' %}" alt="{{ child.name }}" style="max-height: 180px;">
+    </span>
+    {% elif child.type == 'text' %}
+    <span class="col-sm-12 col-lg-4 text-center overflow-hidden">
+        <img src="{% static 'other.png' %}" alt="{{ child.name }}" style="max-height: 180px;">
+    </span>
+    {% elif child.type == 'image' %}
+    <span class="col-sm-12 col-lg-4 d-flex align-items-center justify-content-center">
+        <a href="?id={{ child.id }}&type={{ child.type }}&name={{ child.name }}&content=bytes" data-lightbox="image" data-title="image">
+            <img src="{% static 'image.png' %}" alt="{{ child.name }}" class="lazy"
+                 style="max-height: 180px; object-fit: contain;" id="{{ child.id }}">
+        </a>
+    </span>
+    {% else %}
+    <span class="col-sm-12 col-lg-4 text-center overflow-hidden">
+        <img src="{% static 'other.png' %}" alt="{{ child.name }}" style="max-height: 180px;">
+    </span>
+    {% endif %}
+    <span class="col-sm-12 col-lg-2 text-center resize-font-l">{{ child.type }}</span>
+</div>
+{% endfor %}

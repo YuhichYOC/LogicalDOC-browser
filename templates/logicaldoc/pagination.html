@@ -1,0 +1,21 @@
+<div class="row my-1">
+    <nav aria-label="directory pages">
+        <ul class="pagination">
+{% for p in directory.pages %}
+    {% if p.is_current %}
+            <li class="page-item active" aria-current="page">
+                <span class="page-link">{{ p.text }}</span>
+            </li>
+    {% else %}
+            <li class="page-item">
+        {% if directory.is_tile %}
+                <a class="page-link" href="?id={{ directory.id }}&type={{ directory.type }}&name={{ directory.name }}&page={{ p.page }}&tile=true">{{ p.text }}</a>
+        {% else %}
+                <a class="page-link" href="?id={{ directory.id }}&type={{ directory.type }}&name={{ directory.name }}&page={{ p.page }}">{{ p.text }}</a>
+        {% endif %}
+            </li>
+    {% endif %}
+{% endfor %}
+        </ul>
+    </nav>
+</div>

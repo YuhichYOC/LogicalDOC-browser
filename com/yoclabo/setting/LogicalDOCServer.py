@@ -17,22 +17,28 @@
 # limitations under the License.
 #
 
+import environ
+
+env = environ.Env()
+env.read_env('.env')
+
+
 def get_logicaldoc_server_addr() -> str:
-    return ''
+    return env('LOGICALDOC_SERVER_ADDR')
 
 
 def get_logicaldoc_server_port() -> str:
-    return ''
+    return env('LOGICALDOC_SERVER_PORT')
 
 
 def get_logicaldoc_server_tenant() -> str:
-    return 'logicaldoc'
+    return env('LOGICALDOC_SERVER_TENANT')
 
 
 def get_logicaldoc_server_name() -> str:
     return get_logicaldoc_server_addr() \
-           + ':' + get_logicaldoc_server_port() \
-           + '/' + get_logicaldoc_server_tenant() + '/'
+        + ':' + get_logicaldoc_server_port() \
+        + '/' + get_logicaldoc_server_tenant() + '/'
 
 
 def get_logicaldoc_url() -> str:
@@ -41,6 +47,6 @@ def get_logicaldoc_url() -> str:
 
 def get_logicaldoc_auth_params() -> dict:
     return {
-        'u': '',
-        'pw': '',
+        'u': env('LOGICALDOC_USER'),
+        'pw': env('LOGICALDOC_PASSWORD'),
     }

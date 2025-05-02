@@ -17,31 +17,20 @@
 # limitations under the License.
 #
 
+from django.core.handlers.wsgi import WSGIRequest
 from django.http.response import HttpResponse
 from django.shortcuts import render
 
 
 class BrowserHandler:
 
-    def __init__(self):
-        self.f_request = None
-        self.f_parameters: list = []
+    def __init__(self, request: WSGIRequest) -> None:
+        self.f_request: WSGIRequest = request
+        return
 
     @property
-    def request(self):
+    def request(self) -> WSGIRequest:
         return self.f_request
-
-    @property
-    def parameters(self) -> list:
-        return self.f_parameters
-
-    @request.setter
-    def request(self, arg):
-        self.f_request = arg
-
-    @parameters.setter
-    def parameters(self, arg: list):
-        self.f_parameters = arg
 
     def run(self) -> HttpResponse:
         return render(self.request, 'browser/root.html')
